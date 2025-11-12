@@ -1,0 +1,839 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class TambahDataWargaPage extends StatefulWidget {
+  const TambahDataWargaPage({super.key});
+
+  @override
+  State<TambahDataWargaPage> createState() => _TambahDataWargaPageState();
+}
+
+class _TambahDataWargaPageState extends State<TambahDataWargaPage> {
+  int _currentStep = 0;
+  final PageController _pageController = PageController();
+
+  // Controllers untuk Step 1 - Data Keluarga
+  final TextEditingController _namaController = TextEditingController();
+  final TextEditingController _nikController = TextEditingController();
+  final TextEditingController _nomorKKController = TextEditingController();
+  final TextEditingController _pendidikanController = TextEditingController();
+  final TextEditingController _pekerjaanController = TextEditingController();
+  String? _selectedJenisKelamin;
+  String? _selectedAgama;
+  String? _selectedStatusPerkawinan;
+
+  // Controllers untuk Step 2 - Data Kelahiran
+  final TextEditingController _tempatLahirController = TextEditingController();
+  DateTime? _selectedTanggalLahir;
+  final TextEditingController _namaIbuController = TextEditingController();
+  final TextEditingController _namaAyahController = TextEditingController();
+
+  // Controllers untuk Step 3 - Data Sosial
+  final TextEditingController _rtController = TextEditingController();
+  final TextEditingController _rwController = TextEditingController();
+  final TextEditingController _alamatController = TextEditingController();
+  final TextEditingController _kewarganegaraanController = TextEditingController();
+
+  // Controllers untuk Step 4 - Status Keaktifan
+  String? _selectedStatusWarga;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _namaController.dispose();
+    _nikController.dispose();
+    _nomorKKController.dispose();
+    _pendidikanController.dispose();
+    _pekerjaanController.dispose();
+    _tempatLahirController.dispose();
+    _namaIbuController.dispose();
+    _namaAyahController.dispose();
+    _rtController.dispose();
+    _rwController.dispose();
+    _alamatController.dispose();
+    _kewarganegaraanController.dispose();
+    super.dispose();
+  }
+
+  void _nextStep() {
+    if (_currentStep < 3) {
+      setState(() {
+        _currentStep++;
+      });
+      _pageController.animateToPage(
+        _currentStep,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _previousStep() {
+    if (_currentStep > 0) {
+      setState(() {
+        _currentStep--;
+      });
+      _pageController.animateToPage(
+        _currentStep,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _submitData() {
+    // TODO: Implement data submission logic
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Berhasil',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Text(
+          'Data warga berhasil ditambahkan.',
+          style: GoogleFonts.poppins(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: Text(
+              'OK',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF2988EA),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F1F1F)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Tambah Warga Baru',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF1F1F1F),
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          // Progress Indicator
+          _buildProgressIndicator(),
+          // Content
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              onPageChanged: (index) {
+                setState(() {
+                  _currentStep = index;
+                });
+              },
+              children: [
+                _buildStep1DataKeluarga(),
+                _buildStep2DataKelahiran(),
+                _buildStep3DataSosial(),
+                _buildStep4StatusKeaktifan(),
+              ],
+            ),
+          ),
+          // Bottom Navigation Buttons
+          _buildBottomButtons(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Langkah ${_currentStep + 1} dari 4',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1F1F1F),
+                ),
+              ),
+              Text(
+                _getStepTitle(_currentStep),
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: const Color(0xFF6B7280),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Progress Bar
+          Row(
+            children: List.generate(4, (index) {
+              return Expanded(
+                child: Container(
+                  height: 4,
+                  margin: EdgeInsets.only(right: index < 3 ? 8 : 0),
+                  decoration: BoxDecoration(
+                    color: index <= _currentStep
+                        ? const Color(0xFF2988EA)
+                        : const Color(0xFFE8EAF2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 16),
+          // Step Labels
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildStepLabel('1. Data Keluarga', 0),
+              _buildStepLabel('2. Data Kelahiran', 1),
+              _buildStepLabel('3. Data Sosial', 2),
+              _buildStepLabel('4. Status Keaktifan', 3),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepLabel(String label, int step) {
+    return Text(
+      label,
+      style: GoogleFonts.poppins(
+        fontSize: 10,
+        fontWeight: step == _currentStep ? FontWeight.w600 : FontWeight.w400,
+        color: step == _currentStep
+            ? const Color(0xFF2988EA)
+            : const Color(0xFF9CA3AF),
+      ),
+    );
+  }
+
+  String _getStepTitle(int step) {
+    switch (step) {
+      case 0:
+        return 'Data Keluarga';
+      case 1:
+        return 'Data Kelahiran';
+      case 2:
+        return 'Data Sosial';
+      case 3:
+        return 'Status Keaktifan';
+      default:
+        return '';
+    }
+  }
+
+  Widget _buildStep1DataKeluarga() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Data Keluarga',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1F1F1F),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Masukkan informasi dasar keluarga',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: const Color(0xFF6B7280),
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildTextField(
+            controller: _namaController,
+            label: 'Nama Lengkap',
+            hint: 'Masukkan nama lengkap',
+            icon: Icons.person_outline,
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: _nikController,
+            label: 'NIK',
+            hint: 'Masukkan NIK',
+            icon: Icons.credit_card,
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: _nomorKKController,
+            label: 'Nomor KK',
+            hint: 'Masukkan nomor KK',
+            icon: Icons.family_restroom,
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 16),
+          _buildDropdownField(
+            label: 'Jenis Kelamin',
+            hint: 'Pilih jenis kelamin',
+            value: _selectedJenisKelamin,
+            items: ['Laki-laki', 'Perempuan'],
+            onChanged: (value) {
+              setState(() {
+                _selectedJenisKelamin = value;
+              });
+            },
+            icon: Icons.wc,
+          ),
+          const SizedBox(height: 16),
+          _buildDropdownField(
+            label: 'Agama',
+            hint: 'Pilih agama',
+            value: _selectedAgama,
+            items: ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu'],
+            onChanged: (value) {
+              setState(() {
+                _selectedAgama = value;
+              });
+            },
+            icon: Icons.mosque,
+          ),
+          const SizedBox(height: 16),
+          _buildDropdownField(
+            label: 'Status Perkawinan',
+            hint: 'Pilih status perkawinan',
+            value: _selectedStatusPerkawinan,
+            items: ['Belum Kawin', 'Kawin', 'Cerai Hidup', 'Cerai Mati'],
+            onChanged: (value) {
+              setState(() {
+                _selectedStatusPerkawinan = value;
+              });
+            },
+            icon: Icons.favorite_border,
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: _pendidikanController,
+            label: 'Pendidikan Terakhir',
+            hint: 'Masukkan pendidikan terakhir',
+            icon: Icons.school_outlined,
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: _pekerjaanController,
+            label: 'Pekerjaan',
+            hint: 'Masukkan pekerjaan',
+            icon: Icons.work_outline,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep2DataKelahiran() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Data Kelahiran',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1F1F1F),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Masukkan informasi kelahiran',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: const Color(0xFF6B7280),
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildTextField(
+            controller: _tempatLahirController,
+            label: 'Tempat Lahir',
+            hint: 'Masukkan tempat lahir',
+            icon: Icons.location_on_outlined,
+          ),
+          const SizedBox(height: 16),
+          _buildDateField(
+            label: 'Tanggal Lahir',
+            hint: 'Pilih tanggal lahir',
+            value: _selectedTanggalLahir,
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _selectedTanggalLahir ?? DateTime.now(),
+                firstDate: DateTime(1900),
+                lastDate: DateTime.now(),
+                builder: (context, child) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: const ColorScheme.light(
+                        primary: Color(0xFF2988EA),
+                      ),
+                    ),
+                    child: child!,
+                  );
+                },
+              );
+              if (picked != null) {
+                setState(() {
+                  _selectedTanggalLahir = picked;
+                });
+              }
+            },
+            icon: Icons.calendar_today,
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: _namaIbuController,
+            label: 'Nama Ibu Kandung',
+            hint: 'Masukkan nama ibu kandung',
+            icon: Icons.person_outline,
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: _namaAyahController,
+            label: 'Nama Ayah Kandung',
+            hint: 'Masukkan nama ayah kandung',
+            icon: Icons.person_outline,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep3DataSosial() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Data Sosial',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1F1F1F),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Masukkan informasi sosial dan tempat tinggal',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: const Color(0xFF6B7280),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTextField(
+                  controller: _rtController,
+                  label: 'RT',
+                  hint: 'No. RT',
+                  icon: Icons.home_outlined,
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTextField(
+                  controller: _rwController,
+                  label: 'RW',
+                  hint: 'No. RW',
+                  icon: Icons.home_outlined,
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: _alamatController,
+            label: 'Alamat Lengkap',
+            hint: 'Masukkan alamat lengkap',
+            icon: Icons.location_city,
+            maxLines: 3,
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: _kewarganegaraanController,
+            label: 'Kewarganegaraan',
+            hint: 'Masukkan kewarganegaraan',
+            icon: Icons.flag_outlined,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep4StatusKeaktifan() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Status Keaktifan',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1F1F1F),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tentukan status warga',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: const Color(0xFF6B7280),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Status Warga',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1F1F1F),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildDropdownField(
+            label: 'Pilih status',
+            hint: 'Pilih status',
+            value: _selectedStatusWarga,
+            items: ['Aktif', 'Tidak Aktif', 'Meninggal', 'Pindah'],
+            onChanged: (value) {
+              setState(() {
+                _selectedStatusWarga = value;
+              });
+            },
+            icon: Icons.check_circle_outline,
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F9FF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF2988EA).withValues(alpha: 0.2),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ringkasan Data',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1F1F1F),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildSummaryRow('Nama', _namaController.text.isEmpty ? '-' : _namaController.text),
+                _buildSummaryRow('NIK', _nikController.text.isEmpty ? '-' : _nikController.text),
+                _buildSummaryRow('Jenis Kelamin', _selectedJenisKelamin ?? '-'),
+                _buildSummaryRow('Tempat Lahir', _tempatLahirController.text.isEmpty ? '-' : _tempatLahirController.text),
+                _buildSummaryRow('RT/RW', '${_rtController.text.isEmpty ? '-' : _rtController.text}/${_rwController.text.isEmpty ? '-' : _rwController.text}'),
+                _buildSummaryRow('Status', _selectedStatusWarga ?? '-'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: const Color(0xFF6B7280),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1F1F1F),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1F1F1F),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.poppins(
+              fontSize: 14,
+              color: const Color(0xFF9CA3AF),
+            ),
+            prefixIcon: Icon(icon, color: const Color(0xFF6B7280), size: 20),
+            filled: true,
+            fillColor: const Color(0xFFF8F9FC),
+            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE8EAF2)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE8EAF2)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF2988EA), width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String label,
+    required String hint,
+    required String? value,
+    required List<String> items,
+    required Function(String?) onChanged,
+    required IconData icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1F1F1F),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F9FC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE8EAF2)),
+          ),
+          child: DropdownButtonFormField<String>(
+            initialValue: value,
+            hint: Text(
+              hint,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: const Color(0xFF9CA3AF),
+              ),
+            ),
+            icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF6B7280)),
+            decoration: InputDecoration(
+              prefixIcon: Icon(icon, color: const Color(0xFF6B7280), size: 20),
+              contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              border: InputBorder.none,
+            ),
+            items: items.map((String item) {
+              return DropdownMenuItem<String>(
+                value: item,
+                child: Text(
+                  item,
+                  style: GoogleFonts.poppins(fontSize: 14),
+                ),
+              );
+            }).toList(),
+            onChanged: onChanged,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDateField({
+    required String label,
+    required String hint,
+    required DateTime? value,
+    required VoidCallback onTap,
+    required IconData icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1F1F1F),
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F9FC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE8EAF2)),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: const Color(0xFF6B7280), size: 20),
+                const SizedBox(width: 12),
+                Text(
+                  value != null
+                      ? '${value.day}/${value.month}/${value.year}'
+                      : hint,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: value != null
+                        ? const Color(0xFF1F1F1F)
+                        : const Color(0xFF9CA3AF),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomButtons() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          if (_currentStep > 0)
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _previousStep,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF2988EA),
+                  side: const BorderSide(color: Color(0xFF2988EA)),
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Kembali',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          if (_currentStep > 0) const SizedBox(width: 12),
+          Expanded(
+            flex: _currentStep == 0 ? 1 : 1,
+            child: ElevatedButton(
+              onPressed: _currentStep < 3 ? _nextStep : _submitData,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2988EA),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                _currentStep < 3 ? 'Lanjut' : 'Simpan',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
