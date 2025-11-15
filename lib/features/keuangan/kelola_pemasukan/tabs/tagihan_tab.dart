@@ -156,7 +156,7 @@ class _TagihanTabState extends State<TagihanTab> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2988EA).withOpacity(0.4),
+                            color: const Color(0xFF2988EA).withValues(alpha: 0.4),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -215,7 +215,7 @@ class _TagihanTabState extends State<TagihanTab> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -286,11 +286,11 @@ class _TagihanTabState extends State<TagihanTab> {
           if (isExpanded) ...[
             Divider(
               height: 1,
-              color: const Color(0xFFE8EAF2).withOpacity(0.5),
+              color: const Color(0xFFE8EAF2).withValues(alpha: 0.5),
             ),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFFAFAFA).withOpacity(0.5),
+                color: const Color(0xFFFAFAFA).withValues(alpha: 0.5),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(16),
                   bottomRight: Radius.circular(16),
