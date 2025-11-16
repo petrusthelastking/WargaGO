@@ -5,6 +5,8 @@ import 'tabs/tagihan_tab.dart';
 import 'tabs/lainnya_tab.dart';
 import 'tagih_iuran_page.dart';
 import 'pemasukan_non_iuran_page.dart';
+import 'widgets/kelola_pemasukan_widgets.dart';
+import '../widgets/keuangan_constants.dart';
 
 class KelolaPemasukanPage extends StatefulWidget {
   const KelolaPemasukanPage({super.key});
@@ -35,16 +37,12 @@ class _KelolaPemasukanPageState extends State<KelolaPemasukanPage>
       backgroundColor: const Color(0xFF3B82F6),
       body: Column(
         children: [
-          // Header Section with Gradient
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF3B82F6),
-                  const Color(0xFF2563EB),
-                ],
+                colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
               ),
             ),
             child: SafeArea(
@@ -54,279 +52,44 @@ class _KelolaPemasukanPageState extends State<KelolaPemasukanPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Back Button & Menu
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
-                                width: 1,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.filter_list_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ],
+                    KelolaPemasukanHeader(
+                      onBack: () => Navigator.pop(context),
+                      onFilter: () {},
                     ),
-                    const SizedBox(height: 24),
-                    // Title & Icon
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.account_balance_wallet_rounded,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Kelola Pemasukan',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Pantau dan kelola dengan mudah',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white.withOpacity(0.9),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Stats Card
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildStatItem(
-                              'Total Pemasukan',
-                              'Rp 20.000.000',
-                              Icons.trending_up_rounded,
-                            ),
-                          ),
-                          Container(
-                            width: 1.5,
-                            height: 40,
-                            color: Colors.white.withOpacity(0.3),
-                          ),
-                          Expanded(
-                            child: _buildStatItem(
-                              'Transaksi',
-                              '12 Items',
-                              Icons.receipt_long_rounded,
-                            ),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: KeuanganSpacing.xxl),
+                    KelolaPemasukanStatsCard(
+                      totalPemasukan: 'Rp 20.000.000',
+                      totalTransaksi: '12 Items',
                     ),
                   ],
                 ),
               ),
             ),
           ),
-          // Content Section with Tabs
           Expanded(
             child: Container(
               decoration: const BoxDecoration(
                 color: Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(30),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
               ),
-              child: Column(
-                children: [
-                  // Tab Bar - Modern Design
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 15,
-                          offset: const Offset(0, 4),
-                          spreadRadius: -2,
-                        ),
-                      ],
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: const Color(0xFF6B7280),
-                      labelStyle: GoogleFonts.poppins(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0,
-                      ),
-                      unselectedLabelStyle: GoogleFonts.poppins(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      indicator: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            const Color(0xFF3B82F6),
-                            const Color(0xFF2563EB),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF3B82F6).withOpacity(0.4),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      dividerColor: Colors.transparent,
-                      onTap: (index) {
-                        setState(() {}); // Trigger rebuild to show/hide FAB
-                      },
-                      tabs: [
-                        Tab(
-                          height: 42,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.list_alt_rounded, size: 16),
-                              SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  'Jenis Iuran',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Tab(
-                          height: 42,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.receipt_rounded, size: 16),
-                              SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  'Tagihan',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Tab(
-                          height: 42,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.more_horiz_rounded, size: 16),
-                              SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  'Lainnya',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Tab Content
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        JenisIuranTab(),
-                        TagihanTab(),
-                        LainnyaTab(),
-                      ],
-                    ),
-                  ),
+              child: KelolaPemasukanTabbedContent(
+                tabController: _tabController,
+                onTabChange: () => setState(() {}),
+                tabs: const [
+                  PemasukanTabItem(icon: Icons.list_alt_rounded, label: 'Jenis Iuran'),
+                  PemasukanTabItem(icon: Icons.receipt_rounded, label: 'Tagihan'),
+                  PemasukanTabItem(icon: Icons.more_horiz_rounded, label: 'Lainnya'),
+                ],
+                views: const [
+                  JenisIuranTab(),
+                  TagihanTab(),
+                  LainnyaTab(),
                 ],
               ),
             ),
           ),
         ],
       ),
-      // Floating Action Button - Modern Design
       floatingActionButton: _tabController.index == 0
           ? null
           : Container(
@@ -334,7 +97,7 @@ class _KelolaPemasukanPageState extends State<KelolaPemasukanPage>
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF3B82F6).withOpacity(0.4),
+                    color: const Color(0xFF3B82F6).withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                     spreadRadius: 2,
@@ -342,9 +105,7 @@ class _KelolaPemasukanPageState extends State<KelolaPemasukanPage>
                 ],
               ),
               child: FloatingActionButton.extended(
-                onPressed: () {
-                  _showAddDialog();
-                },
+                onPressed: _showAddDialog,
                 backgroundColor: const Color(0xFF3B82F6),
                 elevation: 0,
                 icon: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
@@ -358,38 +119,6 @@ class _KelolaPemasukanPageState extends State<KelolaPemasukanPage>
                 ),
               ),
             ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          color: Colors.white,
-          size: 24,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: Colors.white.withOpacity(0.9),
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
     );
   }
 
@@ -433,7 +162,7 @@ class _KelolaPemasukanPageState extends State<KelolaPemasukanPage>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0xFF3B82F6).withOpacity(0.05),
+                const Color(0xFF3B82F6).withValues(alpha: 0.05),
                 Colors.white,
               ],
             ),
