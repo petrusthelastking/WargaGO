@@ -93,11 +93,12 @@ service cloud.firestore {
         isValidNik(request.resource.data.nik) &&
         isValidPhone(request.resource.data.phone) &&
 
-        // Role default harus 'warga' (tidak bisa langsung admin)
+        // Role options: warga, admin, petugas
         (request.resource.data.role == 'warga' ||
-         request.resource.data.role == 'admin') &&
+         request.resource.data.role == 'admin' ||
+         request.resource.data.role == 'petugas') &&
 
-        // Status default 'pending' (kecuali admin yang auto-approved)
+        // Status options: pending, approved
         (request.resource.data.status == 'pending' ||
          request.resource.data.status == 'approved');
 
@@ -116,12 +117,6 @@ service cloud.firestore {
         // 3. NIK (unique identifier)
         !('nik' in request.resource.data.diff(resource.data).affectedKeys()) &&
 
-        // 4. Role (hanya admin yang bisa ubah via admin panel)
-        (!('role' in request.resource.data.diff(resource.data).affectedKeys())) &&
-
-        // 5. Status (hanya admin yang bisa approve)
-        (!('status' in request.resource.data.diff(resource.data).affectedKeys())) &&
-
         // WAJIB update timestamp
         'updatedAt' in request.resource.data;
 
@@ -138,18 +133,96 @@ service cloud.firestore {
       // Read: Semua user (untuk transparansi data penduduk)
       allow read: if true;
 
-      // Write: Admin dan Petugas (check di app layer)
+      // Write: Lebih permisif untuk development/testing
+      // TODO: Tambahkan role-based authorization untuk production
       allow create: if hasValidData() &&
-                       'nama' in request.resource.data &&
-                       'nik' in request.resource.data &&
-                       isValidNik(request.resource.data.nik);
+                       'name' in request.resource.data &&
+                       request.resource.data.name is string &&
+                       request.resource.data.name.size() > 0;
 
       allow update: if hasValidData();
+
       allow delete: if true;
     }
 
     // ========================================================================
-    // AGENDA COLLECTION (Kegiatan & Broadcast)
+    // RUMAH COLLECTION (Data Daftar Rumah)
+    // ========================================================================
+
+    match /rumah/{rumahId} {
+      // Read: Semua user (untuk transparansi data rumah)
+      allow read: if true;
+
+      // Write: Admin dan Petugas (check di app layer)
+      allow create: if hasValidData() &&
+                       'alamat' in request.resource.data &&
+                       request.resource.data.alamat is string &&
+                       request.resource.data.alamat.size() > 0 &&
+                       'createdAt' in request.resource.data;
+
+      allow update: if hasValidData() &&
+                       'updatedAt' in request.resource.data;
+
+      allow delete: if true;
+    }
+
+    // ========================================================================
+    // MUTASI COLLECTION (Data Mutasi Warga - Masuk/Keluar/Pindah)
+    // ========================================================================
+
+    match /mutasi/{mutasiId} {
+      // Read: Semua user (untuk transparansi data mutasi)
+      allow read: if true;
+
+      // Write: Admin dan Petugas (check di app layer)
+      allow create: if hasValidData() &&
+                       'nama' in request.resource.data &&
+                       request.resource.data.nama is string &&
+                       request.resource.data.nama.size() > 0 &&
+                       'nik' in request.resource.data &&
+                       'jenisMutasi' in request.resource.data &&
+                       'tanggalMutasi' in request.resource.data &&
+                       'alamatAsal' in request.resource.data &&
+                       'alamatTujuan' in request.resource.data &&
+                       'alasanMutasi' in request.resource.data &&
+                       'createdAt' in request.resource.data;
+
+      allow update: if hasValidData() &&
+                       'updatedAt' in request.resource.data;
+
+      allow delete: if true;
+    }
+
+    // ========================================================================
+    // PENDING WARGA COLLECTION (Terima Warga - Approval System)
+    // ========================================================================
+
+    match /pending_warga/{pendingId} {
+      // Read: Admin & Petugas dapat melihat semua, User hanya miliknya
+      allow read: if true;
+
+      // Create: User dapat mendaftar (self-registration)
+      allow create: if hasValidData() &&
+                       'name' in request.resource.data &&
+                       'nik' in request.resource.data &&
+                       'jenisKelamin' in request.resource.data &&
+                       'tanggalLahir' in request.resource.data &&
+                       'tempatLahir' in request.resource.data &&
+                       'alamat' in request.resource.data &&
+                       'nomorKK' in request.resource.data &&
+                       'status' in request.resource.data &&
+                       'createdAt' in request.resource.data;
+
+      // Update: Admin & Petugas untuk approve/reject
+      allow update: if hasValidData() &&
+                       'status' in request.resource.data;
+
+      // Delete: Admin only
+      allow delete: if true;
+    }
+
+    // ========================================================================
+    // AGENDA COLLECTION (Kegiatan & Broadcast) - UPDATED FOR DASHBOARD
     // ========================================================================
 
     match /agenda/{agendaId} {
@@ -158,12 +231,16 @@ service cloud.firestore {
 
       // Write: Admin dan Petugas
       allow create: if hasValidData() &&
-                       'title' in request.resource.data &&
+                       ('title' in request.resource.data ||
+                        'judul' in request.resource.data) &&
                        'type' in request.resource.data &&
                        (request.resource.data.type == 'kegiatan' ||
-                        request.resource.data.type == 'broadcast');
+                        request.resource.data.type == 'broadcast') &&
+                       'createdAt' in request.resource.data;
 
-      allow update: if hasValidData();
+      allow update: if hasValidData() &&
+                       'updatedAt' in request.resource.data;
+
       allow delete: if true;
 
       // Sub-collection untuk broadcasts
@@ -174,7 +251,7 @@ service cloud.firestore {
     }
 
     // ========================================================================
-    // KEUANGAN COLLECTION (Pemasukan & Pengeluaran)
+    // KEUANGAN COLLECTION - UPDATED FOR DASHBOARD
     // ========================================================================
 
     match /keuangan/{transactionId} {
@@ -188,25 +265,36 @@ service cloud.firestore {
                        request.resource.data.amount is number &&
                        request.resource.data.amount > 0 &&
                        (request.resource.data.type == 'pemasukan' ||
-                        request.resource.data.type == 'pengeluaran');
+                        request.resource.data.type == 'pengeluaran') &&
+                       'createdAt' in request.resource.data;
 
-      allow update: if hasValidData();
+      allow update: if hasValidData() &&
+                       'updatedAt' in request.resource.data;
+
       allow delete: if true;
 
-      // Sub-collections
+      // Sub-collections untuk pemasukan & pengeluaran
       match /pemasukan/{pemasukanId} {
         allow read: if true;
-        allow write: if true;
+        allow create: if hasValidData() &&
+                         'amount' in request.resource.data &&
+                         'createdAt' in request.resource.data;
+        allow update: if hasValidData();
+        allow delete: if true;
       }
 
       match /pengeluaran/{pengeluaranId} {
         allow read: if true;
-        allow write: if true;
+        allow create: if hasValidData() &&
+                         'amount' in request.resource.data &&
+                         'createdAt' in request.resource.data;
+        allow update: if hasValidData();
+        allow delete: if true;
       }
     }
 
     // ========================================================================
-    // MUTASI WARGA COLLECTION
+    // MUTASI WARGA COLLECTION - UPDATED FOR DASHBOARD
     // ========================================================================
 
     match /mutasi_warga/{mutasiId} {
@@ -220,14 +308,17 @@ service cloud.firestore {
                        (request.resource.data.type == 'pindah_masuk' ||
                         request.resource.data.type == 'pindah_keluar' ||
                         request.resource.data.type == 'meninggal' ||
-                        request.resource.data.type == 'lahir');
+                        request.resource.data.type == 'lahir') &&
+                       'createdAt' in request.resource.data;
 
-      allow update: if hasValidData();
+      allow update: if hasValidData() &&
+                       'updatedAt' in request.resource.data;
+
       allow delete: if true;
     }
 
     // ========================================================================
-    // NOTIFICATIONS COLLECTION
+    // NOTIFICATIONS COLLECTION - UPDATED FOR DASHBOARD
     // ========================================================================
 
     match /notifications/{notificationId} {
@@ -238,9 +329,10 @@ service cloud.firestore {
       allow create: if hasValidData() &&
                        'userId' in request.resource.data &&
                        'title' in request.resource.data &&
-                       'message' in request.resource.data;
+                       'message' in request.resource.data &&
+                       'createdAt' in request.resource.data;
 
-      allow update: if true;
+      allow update: if hasValidData();
       allow delete: if true;
     }
 
@@ -253,6 +345,15 @@ service cloud.firestore {
       allow read: if true;
 
       // Write: Admin only (check di app)
+      allow write: if true;
+    }
+
+    // ========================================================================
+    // DASHBOARD STATS COLLECTION (Optional - untuk caching)
+    // ========================================================================
+
+    match /dashboard_stats/{statId} {
+      allow read: if true;
       allow write: if true;
     }
 
@@ -284,6 +385,8 @@ service cloud.firestore {
     //    - Phone: 10-15 digits, numbers only
     //    - Password: 64 character SHA-256 hash
     //    - Amount: Must be positive number
+    //    - createdAt: WAJIB untuk semua collection (untuk dashboard queries)
+    //    - updatedAt: WAJIB saat update
     //
     // 🛡️ IMMUTABLE FIELDS:
     //    - email: Cannot be changed after registration
@@ -305,15 +408,21 @@ service cloud.firestore {
     //    - Deploy rules via: firebase deploy --only firestore:rules
     //
     // 🚨 PRODUCTION CHECKLIST:
-    //    - [ ] Deploy firestore.rules ke Firebase
-    //    - [ ] Run password migration sekali
-    //    - [ ] Ubah default admin password
+    //    - [ ] Deploy firestore.rules ke Firebase Console
+    //    - [ ] Run password migration sekali (migrate_password.dart)
+    //    - [ ] Ubah default admin password (security)
     //    - [ ] Test login dengan password ter-hash
     //    - [ ] Verify password tidak terlihat di Firestore Console
     //    - [ ] Test CRUD operations dengan different roles
+    //    - [ ] Add createdAt ke existing documents (untuk dashboard)
+    //
+    // 📊 DASHBOARD REQUIREMENTS:
+    //    - Semua document WAJIB punya 'createdAt' field
+    //    - Format: FieldValue.serverTimestamp()
+    //    - Diperlukan untuk orderBy queries
+    //    - Diperlukan untuk filter by date range
     //
     // ========================================================================
 
   }
 }
-
