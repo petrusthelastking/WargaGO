@@ -95,11 +95,10 @@ class ModelManager:
         Returns:
             True if at least one model loaded successfully
         """
-        success_count = 0
-        for model_type in MODEL_PATHS.keys():
-            if self.load_model(model_type):
-                success_count += 1
-        return success_count > 0
+        self.load_model("mlp")
+        self.load_model("mlpv2")
+        self.load_model("mlpv2_auto-clahe")
+        return True
     
     def get_model(self, model_type: str) -> Optional[torch.nn.Module]:
         """

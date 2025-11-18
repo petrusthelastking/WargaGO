@@ -14,7 +14,16 @@ MODEL_PATHS = {
         os.path.dirname(os.path.dirname(__file__)), "api", "models", "mlpv2.pth"
     ),
     "mlpv2_auto-clahe": os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "api", "models", "mlpv2_auto-clahe.pth"
+        os.path.dirname(os.path.dirname(__file__)),
+        "api",
+        "models",
+        "mlpv2_auto-clahe.pth",
+    ),
+    "u2netp": os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "api",
+        "models",
+        "u2netp.onnx",
     ),
 }
 
