@@ -34,12 +34,10 @@ router = APIRouter()
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint"""
-    models_status = model_manager.get_models_status()
     available_models = model_manager.get_loaded_models()
     
     return HealthResponse(
         status="healthy" if len(available_models) > 0 else "unhealthy",
-        models_loaded=models_status,
         device=str(DEVICE),
         num_classes=len(CLASS_NAMES),
         class_names=CLASS_NAMES,
@@ -60,18 +58,16 @@ async def get_models_info():
     
     for model_type in MODEL_PATHS.keys():
         model_loaded = model_manager.is_loaded(model_type)
-        model_path = MODEL_PATHS[model_type]
         
         info_dict = {
             "loaded": model_loaded,
-            "path": model_path,
-            "exists": os.path.exists(model_path)
         }
         
         if model_type == "mlp":
             info_dict["architecture"] = "Simple MLP"
             info_dict["hidden_layers"] = "512 -> 256"
             info_dict["dropout"] = 0.5
+            info_dict["features"] = ["Simple Linear Layers"]
         elif model_type == "mlpv2":
             info_dict["architecture"] = "MLP with Residual Connections"
             info_dict["hidden_layers"] = "256 -> 512 -> 256 -> 128"
@@ -153,13 +149,15 @@ async def predict(
         )
         
         return PredictionResponse(
+            filename=file.filename,
             predicted_class=predicted_class,
             confidence=confidence_value,
             all_confidences=all_confidences,
             device=str(DEVICE),
             model_type=model_type,
             segmentation_used=use_segmentation,
-            segmentation_method=seg_method if use_segmentation else None
+            segmentation_method=seg_method if use_segmentation else None,
+            apply_brightness_contrast=apply_brightness_contrast
         )
     
     except Exception as e:
@@ -234,7 +232,11 @@ async def batch_predict(
                 predicted_class=predicted_class,
                 confidence=confidence_value,
                 all_confidences=all_confidences,
-                model_type=model_type
+                device=str(DEVICE),
+                model_type=model_type,
+                segmentation_used=use_segmentation,
+                segmentation_method=seg_method if use_segmentation else None,
+                apply_brightness_contrast=apply_brightness_contrast
             ))
         
         except Exception as e:

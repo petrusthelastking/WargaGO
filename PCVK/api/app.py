@@ -73,12 +73,11 @@ def create_app() -> FastAPI:
         allow_headers=CORS_HEADERS,
     )
     
+    app.include_router(router, prefix="/api")
+    
     # Create and mount Gradio app at root
     gradio_app = create_gradio_interface()
     app = gr.mount_gradio_app(app, gradio_app, path="/")
-    
-    # Include API routes with /api prefix
-    app.include_router(router, prefix="/api")
     
     return app
 
