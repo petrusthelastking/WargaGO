@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 class PredictionResponse(BaseModel):
     """Response model for prediction endpoint"""
+    filename: str
     predicted_class: str
     confidence: float
     all_confidences: Dict[str, float]
@@ -15,12 +16,12 @@ class PredictionResponse(BaseModel):
     model_type: str
     segmentation_used: bool
     segmentation_method: Optional[str]
+    apply_brightness_contrast: bool
 
 
 class HealthResponse(BaseModel):
     """Response model for health check endpoint"""
     status: str
-    models_loaded: Dict[str, bool]
     device: str
     num_classes: int
     class_names: List[str]
@@ -35,8 +36,6 @@ class ClassesResponse(BaseModel):
 class ModelInfo(BaseModel):
     """Information about a single model"""
     loaded: bool
-    path: str
-    exists: bool
     architecture: Optional[str] = None
     hidden_layers: Optional[str] = None
     dropout: Optional[Union[float, str]] = None
@@ -50,13 +49,8 @@ class ModelsInfoResponse(BaseModel):
     models: Dict[str, ModelInfo]
 
 
-class BatchPredictionResult(BaseModel):
+class BatchPredictionResult(PredictionResponse):
     """Single result in batch prediction"""
-    filename: str
-    predicted_class: Optional[str] = None
-    confidence: Optional[float] = None
-    all_confidences: Optional[Dict[str, float]] = None
-    model_type: Optional[str] = None
     error: Optional[str] = None
 
 

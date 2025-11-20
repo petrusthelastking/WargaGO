@@ -27,6 +27,7 @@ dependencies:
   provider: ^6.1.2
   shared_preferences: ^2.3.3
   flutter_launcher_icons: ^0.14.4
+  http: ^1.6.0
 
   # Export packages
   syncfusion_flutter_xlsio: ^28.1.33
@@ -39,6 +40,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  mockito: ^5.5.1
+  build_runner: ^2.10.4
 
 flutter:
   uses-material-design: true
