@@ -1,0 +1,52 @@
+================================================================================
+  FIX SUMMARY: Total Pemasukan Tidak Konsisten
+================================================================================
+
+MASALAH:
+--------
+- Kelola Pemasukan: Rp 215.280.000
+- Menu Cetak: Rp 200.010.000 (atau Rp 0)
+- BERBEDA!
+
+PENYEBAB:
+---------
+Export ambil data dari provider yang bisa terfilter oleh UI.
+Kalau user filter "Menunggu", export cuma ambil data itu.
+
+SOLUSI:
+-------
+Export sekarang query LANGSUNG ke Firestore, tidak pakai provider.
+Formula yang sama di semua tempat:
+
+  Total = SUM(jenis_iuran) + SUM(pemasukan_lain)
+  Filter: isActive = true
+
+FILE YANG DIUBAH:
+-----------------
+1. lib/core/services/keuangan_summary_service.dart
+   - Query pemasukan_lain dengan isActive=true saja
+
+2. lib/features/keuangan/kelola_pemasukan/kelola_pemasukan_page.dart
+   - Export query langsung ke Firestore
+   - Tambah loading indicator
+   - Tambah error handling
+
+HASIL:
+------
+✅ Total SAMA di Dashboard, Kelola Pemasukan, dan Export
+✅ Real-time updates
+✅ Tidak terpengaruh filter UI
+✅ Konsisten dan akurat
+
+TESTING:
+--------
+1. Buka Dashboard → Check total
+2. Buka Kelola Pemasukan → Check total
+3. Export → Check total di file
+4. Pastikan SEMUA SAMA!
+
+STATUS: ✅ DONE
+Tanggal: 20 November 2025
+
+================================================================================
+

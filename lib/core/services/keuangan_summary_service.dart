@@ -5,21 +5,46 @@ class KeuanganSummaryService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Get total pemasukan yang terverifikasi
+  /// Menghitung dari KEDUA collection: jenis_iuran DAN pemasukan_lain
   Future<double> getTotalPemasukan() async {
     try {
-      final snapshot = await _firestore
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      debugPrint('🔄 Calculating total pemasukan from both collections...');
+
+      // 1. Get total from jenis_iuran
+      final jenisIuranSnapshot = await _firestore
+          .collection('jenis_iuran')
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      double totalJenisIuran = 0;
+      for (var doc in jenisIuranSnapshot.docs) {
+        final data = doc.data();
+        // ✅ FIXED: Use 'jumlahIuran' (camelCase) to match Firestore field
+        final nominal = (data['jumlahIuran'] as num?)?.toDouble() ?? 0;
+        totalJenisIuran += nominal;
+        debugPrint('      - ${data['namaIuran']}: Rp ${nominal.toStringAsFixed(0)}');
+      }
+      debugPrint('   📊 Jenis Iuran: Rp ${totalJenisIuran.toStringAsFixed(0)} (${jenisIuranSnapshot.docs.length} items)');
+
+      // 2. Get total from pemasukan_lain (semua yang active)
+      final pemasukanLainSnapshot = await _firestore
           .collection('pemasukan_lain')
           .where('isActive', isEqualTo: true)
           .get();
 
-      double total = 0;
-      for (var doc in snapshot.docs) {
+      double totalPemasukanLain = 0;
+      for (var doc in pemasukanLainSnapshot.docs) {
         final data = doc.data();
         final nominal = (data['nominal'] as num?)?.toDouble() ?? 0;
-        total += nominal;
+        totalPemasukanLain += nominal;
       }
+      debugPrint('   📊 Pemasukan Lain: Rp ${totalPemasukanLain.toStringAsFixed(0)} (${pemasukanLainSnapshot.docs.length} items)');
 
-      debugPrint('✅ Total Pemasukan: Rp ${total.toStringAsFixed(0)}');
+      // 3. Total keseluruhan
+      final total = totalJenisIuran + totalPemasukanLain;
+      debugPrint('   💰 TOTAL PEMASUKAN GABUNGAN: Rp ${total.toStringAsFixed(0)}');
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       return total;
     } catch (e) {
       debugPrint('❌ Error getting total pemasukan: $e');
@@ -67,11 +92,13 @@ class KeuanganSummaryService {
   }
 
   /// Get percentage untuk progress bar
-  /// Menghitung persentase dari total yang digunakan
+  /// Pemasukan = % saldo tersisa dari total pemasukan
+  /// Pengeluaran = % yang sudah digunakan dari total pemasukan
   Future<Map<String, dynamic>> getKeuanganPercentages() async {
     try {
       final pemasukan = await getTotalPemasukan();
       final pengeluaran = await getTotalPengeluaran();
+      final asset = pemasukan - pengeluaran; // Saldo tersisa
 
       // Jika tidak ada pemasukan, return 0
       if (pemasukan == 0) {
@@ -81,14 +108,13 @@ class KeuanganSummaryService {
         };
       }
 
-      // Hitung persentase pengeluaran dari pemasukan
+      // Persentase pengeluaran dari pemasukan (sudah digunakan)
       final pengeluaranPercentage = ((pengeluaran / pemasukan) * 100).round();
 
-      // Persentase pemasukan selalu 100% (karena ini basis)
-      // Atau bisa dihitung dari target
-      final pemasukanPercentage = 100;
+      // Persentase saldo tersisa dari pemasukan
+      final pemasukanPercentage = ((asset / pemasukan) * 100).round();
 
-      debugPrint('✅ Pemasukan: $pemasukanPercentage%, Pengeluaran: $pengeluaranPercentage%');
+      debugPrint('✅ Pemasukan: $pemasukanPercentage% (sisa), Pengeluaran: $pengeluaranPercentage% (terpakai)');
 
       return {
         'pemasukanPercentage': pemasukanPercentage.clamp(0, 100),

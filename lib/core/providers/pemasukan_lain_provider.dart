@@ -1,12 +1,16 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import '../models/pemasukan_lain_model.dart';
 import '../services/pemasukan_lain_service.dart';
 
 /// Provider untuk mengelola state Pemasukan Lain
 class PemasukanLainProvider with ChangeNotifier {
   final PemasukanLainService _service = PemasukanLainService();
+  StreamSubscription<List<PemasukanLainModel>>? _pemasukanSubscription;
+  StreamSubscription<List<PemasukanLainModel>>? _allPemasukanSubscription;
 
   List<PemasukanLainModel> _pemasukanList = [];
+  List<PemasukanLainModel> _allPemasukanList = []; // All data unfiltered
   List<PemasukanLainModel> _menungguList = [];
   List<PemasukanLainModel> _terverifikasiList = [];
   List<PemasukanLainModel> _ditolakList = [];
@@ -18,6 +22,7 @@ class PemasukanLainProvider with ChangeNotifier {
 
   // Getters
   List<PemasukanLainModel> get pemasukanList => _pemasukanList;
+  List<PemasukanLainModel> get allPemasukanList => _allPemasukanList; // Getter for all data
   List<PemasukanLainModel> get menungguList => _menungguList;
   List<PemasukanLainModel> get terverifikasiList => _terverifikasiList;
   List<PemasukanLainModel> get ditolakList => _ditolakList;
@@ -26,28 +31,56 @@ class PemasukanLainProvider with ChangeNotifier {
   String? get error => _error;
   String get selectedStatus => _selectedStatus;
 
-  Stream<List<PemasukanLainModel>>? _pemasukanStream;
-
-  /// Load pemasukan lain berdasarkan status
+  /// Load pemasukan lain berdasarkan status with real-time updates
   void loadPemasukanLain({String? status}) {
     _selectedStatus = status ?? 'Semua';
+    _isLoading = true;
+    notifyListeners();
 
+    // Cancel previous subscription
+    _pemasukanSubscription?.cancel();
+
+    Stream<List<PemasukanLainModel>> stream;
     if (_selectedStatus == 'Semua') {
-      _pemasukanStream = _service.getPemasukanLainStream();
+      stream = _service.getPemasukanLainStream();
     } else {
-      _pemasukanStream = _service.getPemasukanLainByStatusStream(_selectedStatus);
+      stream = _service.getPemasukanLainByStatusStream(_selectedStatus);
     }
 
-    _pemasukanStream!.listen(
+    _pemasukanSubscription = stream.listen(
       (pemasukanList) {
+        debugPrint('✅ PemasukanLainProvider: Stream update - ${pemasukanList.length} items');
         _pemasukanList = pemasukanList;
+        _isLoading = false;
         _error = null;
         notifyListeners();
       },
       onError: (error) {
         _error = error.toString();
+        _isLoading = false;
         debugPrint('❌ Error loading pemasukan lain: $error');
         notifyListeners();
+      },
+    );
+
+    // ALWAYS load all data in background for stats calculation
+    _loadAllPemasukanLain();
+  }
+
+  /// Load ALL pemasukan lain (unfiltered) for accurate stats
+  void _loadAllPemasukanLain() {
+    // Cancel previous subscription
+    _allPemasukanSubscription?.cancel();
+
+    // Subscribe to ALL data stream
+    _allPemasukanSubscription = _service.getPemasukanLainStream().listen(
+      (allList) {
+        debugPrint('✅ PemasukanLainProvider: All data stream update - ${allList.length} items');
+        _allPemasukanList = allList;
+        notifyListeners();
+      },
+      onError: (error) {
+        debugPrint('❌ Error loading all pemasukan lain: $error');
       },
     );
   }
@@ -196,7 +229,8 @@ class PemasukanLainProvider with ChangeNotifier {
 
   @override
   void dispose() {
-    _pemasukanStream = null;
+    _pemasukanSubscription?.cancel();
+    _allPemasukanSubscription?.cancel();
     super.dispose();
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../edit_iuran_page.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import '../../../../core/providers/jenis_iuran_provider.dart';
 
 class JenisIuranTab extends StatefulWidget {
   const JenisIuranTab({super.key});
@@ -11,605 +13,296 @@ class JenisIuranTab extends StatefulWidget {
 
 class _JenisIuranTabState extends State<JenisIuranTab> {
   String _searchQuery = '';
-  DateTime _selectedDate = DateTime.now();
-  int? _expandedIndex;
 
-  final List<Map<String, dynamic>> _jenisIuranList = [
-    {
-      'id': 1,
-      'name': 'Joki by firman',
-      'subtitle': 'Pendapatan Lainnya',
-      'tanggal': '15 Okt 2025 14:23',
-      'nik': 'Rp 11,00',
-      'nominal': 'Rp 11,00',
-      'kategori': 'Dana Bantuan Pemerintah',
-      'verifikator': 'Admin Jawara',
-    },
-    {
-      'id': 2,
-      'name': 'Joki by firman',
-      'subtitle': 'Pendapatan Lainnya',
-      'tanggal': '14 Okt 2025 10:15',
-      'nik': 'Rp 50.000',
-      'nominal': 'Rp 50.000',
-      'kategori': 'Iuran Warga',
-      'verifikator': 'Admin Jawara',
-    },
-    {
-      'id': 3,
-      'name': 'Joki by firman',
-      'subtitle': 'Pendapatan Lainnya',
-      'tanggal': '13 Okt 2025 16:45',
-      'nik': 'Rp 25.000',
-      'nominal': 'Rp 25.000',
-      'kategori': 'Dana Kegiatan',
-      'verifikator': 'Admin Jawara',
-    },
-    {
-      'id': 4,
-      'name': 'Joki by firman',
-      'subtitle': 'Pendapatan Lainnya',
-      'tanggal': '12 Okt 2025 09:30',
-      'nik': 'Rp 100.000',
-      'nominal': 'Rp 100.000',
-      'kategori': 'Donasi',
-      'verifikator': 'Admin Jawara',
-    },
-    {
-      'id': 5,
-      'name': 'Joki by firman',
-      'subtitle': 'Pendapatan Lainnya',
-      'tanggal': '11 Okt 2025 13:20',
-      'nik': 'Rp 75.000',
-      'nominal': 'Rp 75.000',
-      'kategori': 'Iuran Bulanan',
-      'verifikator': 'Admin Jawara',
-    },
-  ];
-
-  List<Map<String, dynamic>> get _filteredList {
-    if (_searchQuery.isEmpty) {
-      return _jenisIuranList;
-    }
-    return _jenisIuranList.where((item) {
-      return item['name']
-              .toString()
-              .toLowerCase()
-              .contains(_searchQuery.toLowerCase()) ||
-          item['subtitle']
-              .toString()
-              .toLowerCase()
-              .contains(_searchQuery.toLowerCase());
-    }).toList();
+  @override
+  void initState() {
+    super.initState();
+    // Fetch data on init
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<JenisIuranProvider>().fetchAllJenisIuran();
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Search Bar & Date Filter
-        Container(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      'Jenis Iuran',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1F2937),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+    return Consumer<JenisIuranProvider>(
+      builder: (context, provider, child) {
+        final jenisIuranList = provider.jenisIuranList;
+        final isLoading = provider.isLoading;
+
+        // Filter list based on search
+        final filteredList = _searchQuery.isEmpty
+            ? jenisIuranList
+            : jenisIuranList.where((item) {
+                return item.namaIuran
+                    .toLowerCase()
+                    .contains(_searchQuery.toLowerCase());
+              }).toList();
+
+        return Column(
+          children: [
+            // Search Bar
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
                   ),
-                  const SizedBox(width: 6),
+                ],
+              ),
+              child: Column(
+                children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: const Color(0xFF3B82F6).withValues(alpha: 0.2),
-                        width: 1,
+                        color: const Color(0xFFE8EAF2),
+                        width: 1.5,
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.list_alt_rounded,
-                          size: 12,
-                          color: Color(0xFF3B82F6),
+                    child: TextField(
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Cari jenis iuran...',
+                        hintStyle: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: const Color(0xFF9CA3AF),
                         ),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${_filteredList.length}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF3B82F6),
-                          ),
+                        prefixIcon: const Icon(
+                          Icons.search_rounded,
+                          color: Color(0xFF6B7280),
+                          size: 22,
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: const Color(0xFFE8EAF2),
-                          width: 1.5,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 16,
                         ),
-                      ),
-                      child: TextField(
-                        onChanged: (value) {
-                          setState(() {
-                            _searchQuery = value;
-                          });
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Cari jenis iuran...',
-                          hintStyle: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: const Color(0xFF9CA3AF),
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.search_rounded,
-                            color: Color(0xFF6B7280),
-                            size: 22,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                            horizontal: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: () => _showDatePicker(),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF3B82F6),
-                            Color(0xFF2563EB),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF2988EA).withValues(alpha: 0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.calendar_today_rounded,
-                        color: Colors.white,
-                        size: 20,
                       ),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-        // List
-        Expanded(
-          child: _filteredList.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: _filteredList.length,
-                  itemBuilder: (context, index) {
-                    final item = _filteredList[index];
-                    final bool isExpanded = _expandedIndex == index;
-                    return _buildIuranCard(item, index, isExpanded);
-                  },
-                ),
-        ),
-      ],
+            ),
+            // List
+            Expanded(
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                      ),
+                    )
+                  : filteredList.isEmpty
+                      ? _buildEmptyState()
+                      : RefreshIndicator(
+                          onRefresh: () => provider.fetchAllJenisIuran(),
+                          child: ListView(
+                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                            children: [
+                              // Jenis Iuran Bulanan Section
+                              if (filteredList.any((item) => item.kategoriIuran == 'bulanan')) ...[
+                                _buildSectionHeader('Jenis Iuran Bulanan',
+                                  filteredList.where((item) => item.kategoriIuran == 'bulanan').length),
+                                const SizedBox(height: 16),
+                                ...filteredList
+                                    .where((item) => item.kategoriIuran == 'bulanan')
+                                    .map((item) => _buildIuranCard(item))
+                                    .toList(),
+                                const SizedBox(height: 24),
+                              ],
+
+                              // Jenis Iuran Khusus Section
+                              if (filteredList.any((item) => item.kategoriIuran == 'khusus')) ...[
+                                _buildSectionHeader('Jenis Iuran Khusus',
+                                  filteredList.where((item) => item.kategoriIuran == 'khusus').length),
+                                const SizedBox(height: 16),
+                                ...filteredList
+                                    .where((item) => item.kategoriIuran == 'khusus')
+                                    .map((item) => _buildIuranCard(item))
+                                    .toList(),
+                              ],
+                            ],
+                          ),
+                        ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildIuranCard(Map<String, dynamic> item, int index, bool isExpanded) {
+  Widget _buildSectionHeader(String title, int count) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 24,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF3B82F6),
+                  Color(0xFF2563EB),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1F2937),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '$count',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF3B82F6),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIuranCard(dynamic item) {
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            const Color(0xFF3B82F6).withValues(alpha: 0.02),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isExpanded
-              ? const Color(0xFF3B82F6).withValues(alpha: 0.3)
-              : const Color(0xFFE8EAF2),
-          width: isExpanded ? 2 : 1.5,
+          color: const Color(0xFFE8EAF2),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: isExpanded
-                ? const Color(0xFF3B82F6).withValues(alpha: 0.15)
-                : Colors.black.withValues(alpha: 0.04),
-            blurRadius: isExpanded ? 20 : 10,
-            offset: Offset(0, isExpanded ? 8 : 2),
-            spreadRadius: isExpanded ? -2 : 0,
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () {
-              setState(() {
-                _expandedIndex = isExpanded ? null : index;
-              });
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Row(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            // Icon
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF3B82F6),
+                    Color(0xFF2563EB),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  item.namaIuran.substring(0, 1).toUpperCase(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Avatar dengan gradient
+                  Text(
+                    item.namaIuran,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1F2937),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
                   Container(
-                    width: 56,
-                    height: 56,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFF3B82F6),
-                          Color(0xFF2563EB),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF3B82F6).withValues(alpha: 0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      color: item.kategoriIuran == 'bulanan'
+                          ? const Color(0xFF10B981).withValues(alpha: 0.1)
+                          : const Color(0xFFF59E0B).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Center(
-                      child: Text(
-                        item['name'].toString().substring(0, 1).toUpperCase(),
-                        style: GoogleFonts.poppins(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
+                    child: Text(
+                      item.kategoriIuran == 'bulanan' ? 'Bulanan' : 'Khusus',
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: item.kategoriIuran == 'bulanan'
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFF59E0B),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  // Content
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['name'],
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF1F2937),
-                            letterSpacing: -0.2,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      const Color(0xFF3B82F6).withValues(alpha: 0.15),
-                                      const Color(0xFF3B82F6).withValues(alpha: 0.08),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: const Color(0xFF3B82F6).withValues(alpha: 0.2),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  item['subtitle'],
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF3B82F6),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Nominal
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        item['nominal'],
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF3B82F6),
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item['tanggal'],
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: const Color(0xFF9CA3AF),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
-                  // Arrow Icon
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: isExpanded
-                          ? const Color(0xFF3B82F6).withValues(alpha: 0.1)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isExpanded
-                            ? const Color(0xFF3B82F6).withValues(alpha: 0.2)
-                            : Colors.transparent,
-                      ),
-                    ),
-                    child: Icon(
-                      isExpanded
-                          ? Icons.keyboard_arrow_up_rounded
-                          : Icons.keyboard_arrow_down_rounded,
-                      color: isExpanded
-                          ? const Color(0xFF3B82F6)
-                          : const Color(0xFF6B7280),
-                      size: 22,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-          if (isExpanded) ...[
-            Container(
-              height: 1,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.transparent,
-                    const Color(0xFF3B82F6).withValues(alpha: 0.2),
-                    Colors.transparent,
-                  ],
+            const SizedBox(width: 12),
+            // Nominal
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  currencyFormat.format(item.jumlahIuran),
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF3B82F6),
+                  ),
                 ),
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF3B82F6).withValues(alpha: 0.03),
-                    const Color(0xFF3B82F6).withValues(alpha: 0.01),
-                  ],
-                ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Detail Information
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: const Color(0xFFE8EAF2),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildModernDetailRow(
-                            'Tanggal',
-                            item['tanggal'],
-                            Icons.calendar_today_rounded,
-                            const Color(0xFF3B82F6),
-                          ),
-                          const SizedBox(height: 14),
-                          _buildModernDetailRow(
-                            'NIK',
-                            item['nik'],
-                            Icons.badge_rounded,
-                            const Color(0xFF3B82F6),
-                          ),
-                          const SizedBox(height: 14),
-                          _buildModernDetailRow(
-                            'Kategori',
-                            item['kategori'],
-                            Icons.category_rounded,
-                            const Color(0xFFF59E0B),
-                          ),
-                          const SizedBox(height: 14),
-                          _buildModernDetailRow(
-                            'Verifikator',
-                            item['verifikator'],
-                            Icons.verified_rounded,
-                            const Color(0xFF8B5CF6),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Edit Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF2988EA).withValues(alpha: 0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => EditIuranPage(iuranData: item),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.edit_outlined, size: 18),
-                          label: Text(
-                            'Edit Iuran',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2988EA),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            minimumSize: const Size(double.infinity, 48),
-                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ),
           ],
-        ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildModernDetailRow(String label, String value, IconData icon, Color color) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: color,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF9CA3AF),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1F2937),
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -641,7 +334,7 @@ class _JenisIuranTabState extends State<JenisIuranTab> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Coba cari dengan kata kunci lain',
+            'Coba cari dengan kata kunci lain\natau tambah jenis iuran baru',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               fontSize: 14,
@@ -652,31 +345,6 @@ class _JenisIuranTabState extends State<JenisIuranTab> {
         ],
       ),
     );
-  }
-
-  void _showDatePicker() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF3B82F6),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
   }
 }
 

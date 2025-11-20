@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/widgets/app_bottom_navigation.dart';
 import '../../core/widgets/export_dialog.dart';
 import '../../core/services/keuangan_summary_service.dart';
+import '../../core/providers/jenis_iuran_provider.dart';
+import '../../core/providers/pemasukan_lain_provider.dart';
 import '../dashboard/dashboard_page.dart';
 import '../data_warga/data_penduduk/data_penduduk_page.dart';
 import '../agenda/kegiatan/kegiatan_page.dart';
@@ -26,12 +30,6 @@ class _KeuanganPageState extends State<KeuanganPage> {
   DateTime _selectedDate = DateTime.now();
   int? _expandedIndex;
   bool _showPengeluaran = false;
-
-  // State untuk modal cetak laporan
-  DateTime _printStartDate = DateTime.now();
-  DateTime _printEndDate = DateTime.now();
-  String _selectedReportType = 'Semua';
-  final List<String> _reportTypes = ['Semua', 'Pemasukan', 'Pengeluaran'];
 
   // Data Pemasukan
   final List<Map<String, dynamic>> _mockPemasukan = [
@@ -161,7 +159,43 @@ class _KeuanganPageState extends State<KeuanganPage> {
   @override
   void initState() {
     super.initState();
+
+    // Add provider listeners for real-time updates
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final jenisIuranProvider = context.read<JenisIuranProvider>();
+        final pemasukanLainProvider = context.read<PemasukanLainProvider>();
+
+        // Add listeners to reload data when providers notify
+        jenisIuranProvider.addListener(_onProviderDataChanged);
+        pemasukanLainProvider.addListener(_onProviderDataChanged);
+
+        // Initial load
+        jenisIuranProvider.fetchAllJenisIuran();
+        pemasukanLainProvider.loadPemasukanLain();
+      }
+    });
+
     _loadKeuanganData();
+  }
+
+  void _onProviderDataChanged() {
+    if (mounted) {
+      print('🔄 Keuangan Page: Provider data changed, reloading stats...');
+      _loadKeuanganData();
+    }
+  }
+
+  @override
+  void dispose() {
+    // Remove listeners to prevent memory leaks
+    try {
+      context.read<JenisIuranProvider>().removeListener(_onProviderDataChanged);
+      context.read<PemasukanLainProvider>().removeListener(_onProviderDataChanged);
+    } catch (e) {
+      // Ignore if already disposed
+    }
+    super.dispose();
   }
 
   Future<void> _loadKeuanganData() async {
@@ -170,6 +204,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
     });
 
     try {
+      print('🔄 Loading keuangan summary...');
       final summary = await _keuanganService.getKeuanganSummary();
 
       if (mounted) {
@@ -182,8 +217,10 @@ class _KeuanganPageState extends State<KeuanganPage> {
           _growthPercentage = summary['growthPercentage'] ?? 0;
           _isLoadingKeuangan = false;
         });
+        print('✅ Keuangan summary loaded: Total Pemasukan = Rp ${_totalPemasukan.toStringAsFixed(0)}, Total Pengeluaran = Rp ${_totalPengeluaran.toStringAsFixed(0)}');
       }
     } catch (e) {
+      print('❌ Error loading keuangan summary: $e');
       if (mounted) {
         setState(() {
           _isLoadingKeuangan = false;
@@ -1500,308 +1537,126 @@ class _KeuanganPageState extends State<KeuanganPage> {
     }
   }
 
-  void _showPrintModal({bool isPemasukan = true}) {
-    // Set jenis laporan yang sesuai berdasarkan tombol yang diklik
-    final availableReportTypes = isPemasukan
-        ? ['Semua', 'Pemasukan']
-        : ['Semua', 'Pengeluaran'];
+  void _showPrintModal({bool isPemasukan = true}) async {
+    // Ambil data dari PROVIDER yang sama dengan kelola_pemasukan
+    try {
+      List<Map<String, dynamic>> exportData = [];
 
-    // Reset selected type ke 'Semua' saat modal dibuka
-    String currentReportType = 'Semua';
+      if (isPemasukan) {
+        print('📊 Fetching pemasukan data for export from PROVIDERS...');
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8EAF2),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Cetak Laporan',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1F1F1F),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Check terlebih dahulu sebelum cetak Laporan',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: const Color(0xFF9CA3AF),
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Tanggal Mulai
-              _buildDatePickerField(
-                label: 'Tanggal Mulai',
-                date: _printStartDate,
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _printStartDate,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2030),
-                    builder: (context, child) {
-                      return Theme(
-                        data: Theme.of(context).copyWith(
-                          colorScheme: const ColorScheme.light(
-                            primary: Color(0xFF2988EA),
-                          ),
-                        ),
-                        child: child!,
-                      );
-                    },
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      _printStartDate = picked;
-                    });
-                    setModalState(() {});
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              // Tanggal Akhir
-              _buildDatePickerField(
-                label: 'Tanggal Akhir',
-                date: _printEndDate,
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _printEndDate,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2030),
-                    builder: (context, child) {
-                      return Theme(
-                        data: Theme.of(context).copyWith(
-                          colorScheme: const ColorScheme.light(
-                            primary: Color(0xFF2988EA),
-                          ),
-                        ),
-                        child: child!,
-                      );
-                    },
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      _printEndDate = picked;
-                    });
-                    setModalState(() {});
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              // Jenis Laporan Dropdown
-              _buildDropdownField(
-                label: 'Jenis Laporan',
-                value: currentReportType,
-                items: availableReportTypes,
-                onChanged: (value) {
-                  setModalState(() {
-                    currentReportType = value!;
-                  });
-                },
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Laporan $currentReportType berhasil dibuat. File siap diunduh.',
-                        style: GoogleFonts.poppins(),
-                      ),
-                      backgroundColor: const Color(0xFF10B981),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2988EA),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Cetak Laporan',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              SizedBox(height: MediaQuery.of(context).padding.bottom),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+        // Get data from JenisIuranProvider (same as kelola_pemasukan)
+        final jenisIuranProvider = context.read<JenisIuranProvider>();
+        final jenisIuranList = jenisIuranProvider.allJenisIuranList;
 
-  Widget _buildDatePickerField({
-    required String label,
-    required DateTime date,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF6B7280),
-          ),
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE8EAF2)),
+        print('   ✓ Jenis Iuran from Provider: ${jenisIuranList.length} items');
+        for (var item in jenisIuranList) {
+          exportData.add({
+            'tanggal': item.createdAt != null
+                ? DateFormat('dd/MM/yyyy').format(item.createdAt!)
+                : '-',
+            'name': item.namaIuran,
+            'category': 'Iuran',
+            'nominal': item.jumlahIuran, // Send as number
+            'nominalFormatted': currencyFormat.format(item.jumlahIuran), // For display
+            'penerima': item.createdBy.isNotEmpty ? item.createdBy : '-',
+            'deskripsi': '-',
+            'status': 'Terverifikasi',
+          });
+        }
+        print('   📦 exportData after Jenis Iuran: ${exportData.length} items');
+
+        // Get data from PemasukanLainProvider (same as kelola_pemasukan)
+        final pemasukanLainProvider = context.read<PemasukanLainProvider>();
+        final pemasukanList = pemasukanLainProvider.allPemasukanList;
+
+        print('   ✓ Pemasukan Lain from Provider: ${pemasukanList.length} items');
+        for (var item in pemasukanList) {
+          exportData.add({
+            'tanggal': DateFormat('dd/MM/yyyy').format(item.tanggal),
+            'name': item.name,
+            'category': item.category,
+            'nominal': item.nominal, // Send as number
+            'nominalFormatted': currencyFormat.format(item.nominal), // For display
+            'penerima': '-',
+            'deskripsi': item.deskripsi ?? '-',
+            'status': item.status,
+          });
+        }
+        print('   📦 exportData after Pemasukan Lain: ${exportData.length} items');
+
+        // Calculate total (same calculation as kelola_pemasukan)
+        final totalJenisIuran = jenisIuranList.fold<double>(0, (sum, item) => sum + item.jumlahIuran);
+        final totalPemasukanLain = pemasukanList.fold<double>(0, (sum, item) => sum + item.nominal);
+        final totalPemasukan = totalJenisIuran + totalPemasukanLain;
+
+        // Verify total from exportData
+        final totalFromExportData = exportData.fold<double>(0, (sum, item) => sum + (item['nominal'] as double));
+
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('💰 VERIFIKASI TOTAL CALCULATION:');
+        print('   📊 Jenis Iuran: Rp ${currencyFormat.format(totalJenisIuran)} (${jenisIuranList.length} items)');
+        print('   📊 Pemasukan Lain: Rp ${currencyFormat.format(totalPemasukanLain)} (${pemasukanList.length} items)');
+        print('   ➕ TOTAL GABUNGAN: Rp ${currencyFormat.format(totalPemasukan)}');
+        print('   ✅ Total dari exportData: Rp ${currencyFormat.format(totalFromExportData)} (${exportData.length} items)');
+        print('   🔍 Match: ${totalPemasukan == totalFromExportData ? "✅ YA" : "❌ TIDAK"}');
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      } else {
+        print('📊 Fetching pengeluaran data for export...');
+
+        // Get data from pengeluaran
+        final pengeluaranSnapshot = await FirebaseFirestore.instance
+            .collection('pengeluaran')
+            .where('isActive', isEqualTo: true)
+            .where('status', isEqualTo: 'Terverifikasi')
+            .get();
+
+        print('   ✓ Pengeluaran: ${pengeluaranSnapshot.docs.length} items');
+        for (var doc in pengeluaranSnapshot.docs) {
+          final data = doc.data();
+          final nominal = (data['nominal'] as num?)?.toDouble() ?? 0;
+          exportData.add({
+            'tanggal': data['tanggal'] != null
+                ? DateFormat('dd/MM/yyyy').format((data['tanggal'] as Timestamp).toDate())
+                : '-',
+            'name': data['judul'] ?? '-',
+            'category': data['kategori'] ?? 'Pengeluaran',
+            'nominal': nominal, // Send as number, not formatted string
+            'nominalFormatted': currencyFormat.format(nominal), // For display
+            'penerima': data['penerima'] ?? '-',
+            'deskripsi': data['deskripsi'] ?? '-',
+            'status': data['status'] ?? 'Terverifikasi',
+          });
+        }
+
+        // Calculate and print total for verification
+        double totalPengeluaran = exportData.fold(0, (sum, item) => sum + (item['nominal'] as double));
+        print('💰 Total Pengeluaran untuk Export: Rp ${currencyFormat.format(totalPengeluaran)}');
+      }
+
+      // Show export dialog with real data
+      if (mounted) {
+        ExportDialog.show(
+          context: context,
+          data: exportData,
+          title: isPemasukan ? 'Laporan Pemasukan' : 'Laporan Pengeluaran',
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading data for export: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Gagal memuat data. Silakan coba lagi.',
+              style: GoogleFonts.poppins(),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  DateFormat('d MMM yyyy').format(date),
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: const Color(0xFF1F1F1F),
-                  ),
-                ),
-                const Icon(
-                  Icons.calendar_today,
-                  color: Color(0xFF6B7280),
-                  size: 20,
-                ),
-              ],
-            ),
+            backgroundColor: const Color(0xFFEF4444),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdownField({
-    required String label,
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF6B7280),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE8EAF2)),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: value,
-              isExpanded: true,
-              icon: const Icon(
-                Icons.keyboard_arrow_down,
-                color: Color(0xFF6B7280),
-              ),
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: const Color(0xFF1F1F1F),
-              ),
-              items: items.map((String item) {
-                return DropdownMenuItem<String>(
-                  value: item,
-                  child: Text(item),
-                );
-              }).toList(),
-              onChanged: onChanged,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildModalOption(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF6B7280),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8F9FC),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE8EAF2)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                value,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: const Color(0xFF1F1F1F),
-                ),
-              ),
-              const Icon(
-                Icons.keyboard_arrow_down,
-                color: Color(0xFF6B7280),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+        );
+      }
+    }
   }
 }

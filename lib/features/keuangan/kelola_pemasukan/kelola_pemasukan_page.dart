@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:jawara/core/providers/jenis_iuran_provider.dart';
 import 'package:jawara/core/providers/pemasukan_lain_provider.dart';
+import 'package:jawara/core/widgets/export_dialog.dart';
 import 'tabs/jenis_iuran_tab.dart';
 import 'tabs/lainnya_tab.dart';
 import 'pemasukan_non_iuran_page.dart';
@@ -21,6 +23,7 @@ class KelolaPemasukanPage extends StatefulWidget {
 class _KelolaPemasukanPageState extends State<KelolaPemasukanPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _rebuildKey = 0; // Add key to force rebuild
 
   @override
   void initState() {
@@ -30,8 +33,16 @@ class _KelolaPemasukanPageState extends State<KelolaPemasukanPage>
     // Load data from BOTH providers on init for complete stats
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<JenisIuranProvider>().fetchAllJenisIuran();
-        context.read<PemasukanLainProvider>().loadPemasukanLain();
+        final jenisIuranProvider = context.read<JenisIuranProvider>();
+        final pemasukanLainProvider = context.read<PemasukanLainProvider>();
+
+        // Add listeners to force rebuild when data changes
+        jenisIuranProvider.addListener(_onDataChanged);
+        pemasukanLainProvider.addListener(_onDataChanged);
+
+        // Initial data load
+        jenisIuranProvider.fetchAllJenisIuran();
+        pemasukanLainProvider.loadPemasukanLain();
       }
     });
 
@@ -52,8 +63,23 @@ class _KelolaPemasukanPageState extends State<KelolaPemasukanPage>
     });
   }
 
+  void _onDataChanged() {
+    if (mounted) {
+      setState(() {
+        _rebuildKey++; // Increment key to force rebuild
+      });
+    }
+  }
+
   @override
   void dispose() {
+    // Remove listeners before dispose
+    try {
+      context.read<JenisIuranProvider>().removeListener(_onDataChanged);
+      context.read<PemasukanLainProvider>().removeListener(_onDataChanged);
+    } catch (e) {
+      // Ignore if already disposed
+    }
     _tabController.dispose();
     super.dispose();
   }
@@ -61,9 +87,13 @@ class _KelolaPemasukanPageState extends State<KelolaPemasukanPage>
   Widget _buildDynamicStatsCard() {
     // Combine data from BOTH providers to show TOTAL of everything
     return Consumer2<JenisIuranProvider, PemasukanLainProvider>(
+      key: ValueKey('stats_card_$_rebuildKey'), // Force rebuild with key
       builder: (context, jenisIuranProvider, pemasukanLainProvider, child) {
-        final jenisIuranList = jenisIuranProvider.jenisIuranList;
-        final pemasukanList = pemasukanLainProvider.pemasukanList;
+        // Use ALL data lists (unfiltered) to get accurate totals
+        final jenisIuranList = jenisIuranProvider.allJenisIuranList;
+        final pemasukanList = pemasukanLainProvider.allPemasukanList; // ✅ Changed to allPemasukanList
+
+        print('🔄 Stats Card Rebuild: Jenis Iuran=${jenisIuranList.length}, Pemasukan Lain=${pemasukanList.length}');
 
         // Calculate total from Jenis Iuran
         final totalJenisIuran = jenisIuranList.fold<double>(
@@ -80,6 +110,8 @@ class _KelolaPemasukanPageState extends State<KelolaPemasukanPage>
         // TOTAL KESELURUHAN = Jenis Iuran + Pemasukan Lain
         final totalKeseluruhan = totalJenisIuran + totalPemasukanLain;
         final totalItems = jenisIuranList.length + pemasukanList.length;
+
+        print('💰 Total Calculation: Jenis Iuran=Rp ${totalJenisIuran.toStringAsFixed(0)}, Pemasukan Lain=Rp ${totalPemasukanLain.toStringAsFixed(0)}, TOTAL=Rp ${totalKeseluruhan.toStringAsFixed(0)}');
 
         final formatter = NumberFormat.currency(
           locale: 'id_ID',
@@ -119,6 +151,7 @@ class _KelolaPemasukanPageState extends State<KelolaPemasukanPage>
                     KelolaPemasukanHeader(
                       onBack: () => Navigator.pop(context),
                       onFilter: () {},
+                      onExport: _showExportDialog,
                     ),
                     const SizedBox(height: KeuanganSpacing.xxl),
                     _buildDynamicStatsCard(),
@@ -177,6 +210,103 @@ class _KelolaPemasukanPageState extends State<KelolaPemasukanPage>
         ),
       ),
     );
+  }
+
+  void _showExportDialog() async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // Get FRESH data directly from Firestore to ensure accuracy
+      // Get all active jenis_iuran
+      final jenisIuranSnapshot = await FirebaseFirestore.instance
+          .collection('jenis_iuran')
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      // Get all active pemasukan_lain
+      final pemasukanLainSnapshot = await FirebaseFirestore.instance
+          .collection('pemasukan_lain')
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      // Convert data to export format
+      final exportData = <Map<String, dynamic>>[];
+
+      // Add Jenis Iuran data
+      for (var doc in jenisIuranSnapshot.docs) {
+        final data = doc.data();
+        exportData.add({
+          'tanggal': data['createdAt'] != null
+              ? DateFormat('dd/MM/yyyy HH:mm').format((data['createdAt'] as Timestamp).toDate())
+              : '-',
+          'name': data['nama_iuran'] ?? '-',
+          'category': 'Iuran',
+          'nominal': 'Rp ${NumberFormat('#,###').format((data['jumlah_iuran'] as num?)?.toDouble() ?? 0)}',
+          'penerima': '-',
+          'deskripsi': 'Jenis Iuran: ${data['nama_iuran'] ?? '-'}',
+          'status': 'Aktif',
+        });
+      }
+
+      // Add Pemasukan Lain data
+      for (var doc in pemasukanLainSnapshot.docs) {
+        final data = doc.data();
+        exportData.add({
+          'tanggal': data['tanggal'] != null
+              ? DateFormat('dd/MM/yyyy HH:mm').format((data['tanggal'] as Timestamp).toDate())
+              : '-',
+          'name': data['name'] ?? '-',
+          'category': data['category'] ?? '-',
+          'nominal': 'Rp ${NumberFormat('#,###').format((data['nominal'] as num?)?.toDouble() ?? 0)}',
+          'penerima': data['createdBy'] ?? '-',
+          'deskripsi': data['deskripsi'] ?? '-',
+          'status': data['status'] ?? 'Aktif',
+        });
+      }
+
+      // Close loading
+      if (mounted) Navigator.pop(context);
+
+      if (exportData.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Tidak ada data untuk di-export', style: GoogleFonts.poppins()),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Show export dialog
+      if (mounted) {
+        ExportDialog.show(
+          context: context,
+          data: exportData,
+          title: 'Laporan_Pemasukan',
+        );
+      }
+    } catch (e) {
+      // Close loading
+      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e', style: GoogleFonts.poppins()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showAddDialog() async {
