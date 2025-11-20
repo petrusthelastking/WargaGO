@@ -13,10 +13,12 @@ class KelolaPemasukanHeader extends StatelessWidget {
     super.key,
     required this.onBack,
     required this.onFilter,
+    this.onExport,
   });
 
   final VoidCallback onBack;
   final VoidCallback onFilter;
+  final VoidCallback? onExport;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +32,13 @@ class KelolaPemasukanHeader extends StatelessWidget {
               onTap: onBack,
             ),
             const Spacer(),
+            if (onExport != null) ...[
+              _HeaderIcon(
+                icon: Icons.file_download_outlined,
+                onTap: onExport!,
+              ),
+              const SizedBox(width: 12),
+            ],
             _HeaderIcon(
               icon: Icons.filter_list_rounded,
               onTap: onFilter,

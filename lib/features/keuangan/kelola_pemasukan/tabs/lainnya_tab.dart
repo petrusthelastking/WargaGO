@@ -43,15 +43,6 @@ class _LainnyaTabState extends State<LainnyaTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Pemasukan Lainnya',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1F1F1F),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
@@ -138,6 +129,16 @@ class _LainnyaTabState extends State<LainnyaTab> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Title below search box
+                  Text(
+                    'Pemasukan Lainnya',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1F1F1F),
+                    ),
                   ),
                 ],
               ),

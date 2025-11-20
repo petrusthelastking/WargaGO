@@ -57,19 +57,56 @@ class ExportService {
       }
 
       // Data rows
+      double total = 0;
+      int jenisIuranCount = 0;
+      int pemasukanLainCount = 0;
+      double totalJenisIuran = 0;
+      double totalPemasukanLain = 0;
+
       for (int i = 0; i < data.length; i++) {
         final item = data[i];
         final row = i + 2; // Start from row 2
+
+        // Get nominal value
+        final nominal = (item['nominal'] is num)
+            ? (item['nominal'] as num).toDouble()
+            : 0.0;
+        total += nominal;
+
+        // Count by category
+        final category = item['category'] ?? '';
+        if (category == 'Iuran') {
+          jenisIuranCount++;
+          totalJenisIuran += nominal;
+        } else {
+          pemasukanLainCount++;
+          totalPemasukanLain += nominal;
+        }
 
         sheet.getRangeByIndex(row, 1).setNumber(i + 1);
         sheet.getRangeByIndex(row, 2).setText(item['tanggal'] ?? '-');
         sheet.getRangeByIndex(row, 3).setText(item['name'] ?? '-');
         sheet.getRangeByIndex(row, 4).setText(item['category'] ?? '-');
-        sheet.getRangeByIndex(row, 5).setText(item['nominal'] ?? '-');
+        sheet.getRangeByIndex(row, 5).setText(item['nominalFormatted'] ?? currencyFormat.format(nominal));
         sheet.getRangeByIndex(row, 6).setText(item['penerima'] ?? '-');
         sheet.getRangeByIndex(row, 7).setText(item['deskripsi'] ?? '-');
         sheet.getRangeByIndex(row, 8).setText(item['status'] ?? '-');
       }
+
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      debugPrint('📊 Excel Export Service - Data Verification:');
+      debugPrint('   📦 Total items received: ${data.length}');
+      debugPrint('   📊 Jenis Iuran: $jenisIuranCount items = ${currencyFormat.format(totalJenisIuran)}');
+      debugPrint('   📊 Pemasukan Lain: $pemasukanLainCount items = ${currencyFormat.format(totalPemasukanLain)}');
+      debugPrint('   💰 TOTAL CALCULATED: ${currencyFormat.format(total)}');
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      // Add total row
+      final totalRow = data.length + 2;
+      sheet.getRangeByIndex(totalRow, 4).setText('TOTAL:');
+      sheet.getRangeByIndex(totalRow, 4).cellStyle.bold = true;
+      sheet.getRangeByIndex(totalRow, 5).setText(currencyFormat.format(total));
+      sheet.getRangeByIndex(totalRow, 5).cellStyle.bold = true;
 
       // Auto-fit columns
       for (int i = 1; i <= headers.length; i++) {
@@ -98,13 +135,37 @@ class ExportService {
     try {
       final pdf = pw.Document();
 
-      // Calculate total
+      // Calculate total from nominal field (as number)
       double total = 0;
+      int jenisIuranCount = 0;
+      int pemasukanLainCount = 0;
+      double totalJenisIuran = 0;
+      double totalPemasukanLain = 0;
+
       for (var item in data) {
-        final nominalStr = item['nominal'] ?? '0';
-        final nominal = double.tryParse(nominalStr.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
+        final nominal = (item['nominal'] is num)
+            ? (item['nominal'] as num).toDouble()
+            : 0.0;
         total += nominal;
+
+        // Count by category
+        final category = item['category'] ?? '';
+        if (category == 'Iuran') {
+          jenisIuranCount++;
+          totalJenisIuran += nominal;
+        } else {
+          pemasukanLainCount++;
+          totalPemasukanLain += nominal;
+        }
       }
+
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      debugPrint('📄 PDF Export Service - Data Verification:');
+      debugPrint('   📦 Total items received: ${data.length}');
+      debugPrint('   📊 Jenis Iuran: $jenisIuranCount items = ${currencyFormat.format(totalJenisIuran)}');
+      debugPrint('   📊 Pemasukan Lain: $pemasukanLainCount items = ${currencyFormat.format(totalPemasukanLain)}');
+      debugPrint('   💰 TOTAL CALCULATED: ${currencyFormat.format(total)}');
+      debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       pdf.addPage(
         pw.MultiPage(
@@ -138,12 +199,15 @@ class ExportService {
                 headers: ['No', 'Tanggal', 'Nama', 'Kategori', 'Nominal', 'Status'],
                 data: List.generate(data.length, (index) {
                   final item = data[index];
+                  final nominal = (item['nominal'] is num)
+                      ? (item['nominal'] as num).toDouble()
+                      : 0.0;
                   return [
                     '${index + 1}',
                     item['tanggal'] ?? '-',
                     item['name'] ?? '-',
                     item['category'] ?? '-',
-                    item['nominal'] ?? '-',
+                    item['nominalFormatted'] ?? currencyFormat.format(nominal),
                     item['status'] ?? '-',
                   ];
                 }),
@@ -212,19 +276,37 @@ class ExportService {
       ]);
 
       // Data rows
+      double total = 0;
       for (int i = 0; i < data.length; i++) {
         final item = data[i];
+        final nominal = (item['nominal'] is num)
+            ? (item['nominal'] as num).toDouble()
+            : 0.0;
+        total += nominal;
+
         rows.add([
           i + 1,
           item['tanggal'] ?? '-',
           item['name'] ?? '-',
           item['category'] ?? '-',
-          item['nominal'] ?? '-',
+          item['nominalFormatted'] ?? currencyFormat.format(nominal),
           item['penerima'] ?? '-',
           item['deskripsi'] ?? '-',
           item['status'] ?? '-',
         ]);
       }
+
+      // Add total row
+      rows.add([
+        '',
+        '',
+        '',
+        'TOTAL:',
+        currencyFormat.format(total),
+        '',
+        '',
+        '',
+      ]);
 
       // Convert to CSV
       String csv = const ListToCsvConverter().convert(rows);
@@ -234,7 +316,7 @@ class ExportService {
       final path = '${directory.path}/$filename.csv';
       final file = File(path);
       await file.writeAsString(csv);
-      debugPrint('✅ CSV exported: $path');
+      debugPrint('✅ CSV exported: $path with total: ${currencyFormat.format(total)}');
       return file;
     } catch (e) {
       debugPrint('❌ Error exporting to CSV: $e');

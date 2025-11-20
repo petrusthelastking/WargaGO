@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:jawara/core/services/jenis_iuran_service.dart';
 import 'package:jawara/core/models/jenis_iuran_model.dart';
 
@@ -10,6 +11,7 @@ import 'package:jawara/core/models/jenis_iuran_model.dart';
 /// - Separation of Concerns: Business logic di service, state management di sini
 class JenisIuranProvider extends ChangeNotifier {
   final JenisIuranService _jenisIuranService = JenisIuranService();
+  StreamSubscription<List<JenisIuranModel>>? _jenisIuranSubscription;
 
   List<JenisIuranModel> _jenisIuranList = [];
   JenisIuranModel? _selectedJenisIuran;
@@ -109,7 +111,7 @@ class JenisIuranProvider extends ChangeNotifier {
   // READ
   // ============================================================================
 
-  /// Fetch all jenis iuran
+  /// Fetch all jenis iuran with real-time updates via stream
   Future<void> fetchAllJenisIuran() async {
     print('🔄 JenisIuranProvider: fetchAllJenisIuran() called');
     _isLoading = true;
@@ -117,12 +119,26 @@ class JenisIuranProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _jenisIuranList = await _jenisIuranService.getAllJenisIuran();
-      print('✅ JenisIuranProvider: Fetched ${_jenisIuranList.length} items');
-      _isLoading = false;
-      notifyListeners();
+      // Cancel previous subscription if exists
+      await _jenisIuranSubscription?.cancel();
+
+      // Listen to stream for real-time updates
+      _jenisIuranSubscription = _jenisIuranService.streamAllJenisIuran().listen(
+        (jenisIuranList) {
+          print('✅ JenisIuranProvider: Stream update - ${jenisIuranList.length} items');
+          _jenisIuranList = jenisIuranList;
+          _isLoading = false;
+          notifyListeners();
+        },
+        onError: (error) {
+          print('❌ JenisIuranProvider: Stream error - $error');
+          _errorMessage = 'Error: ${error.toString()}';
+          _isLoading = false;
+          notifyListeners();
+        },
+      );
     } catch (e) {
-      print('❌ JenisIuranProvider: Error fetching data - $e');
+      print('❌ JenisIuranProvider: Error setting up stream - $e');
       _errorMessage = 'Error: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
@@ -132,6 +148,12 @@ class JenisIuranProvider extends ChangeNotifier {
   /// Stream jenis iuran (real-time)
   Stream<List<JenisIuranModel>> streamJenisIuran() {
     return _jenisIuranService.streamAllJenisIuran();
+  }
+
+  @override
+  void dispose() {
+    _jenisIuranSubscription?.cancel();
+    super.dispose();
   }
 
   /// Get jenis iuran by ID

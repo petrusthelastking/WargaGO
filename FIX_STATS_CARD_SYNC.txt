@@ -1,0 +1,156 @@
+================================================================================
+  ROOT CAUSE ANALYSIS: Ketidaksinkronan Total Pemasukan
+================================================================================
+
+MASALAH YANG DITEMUKAN:
+------------------------
+Total pemasukan di Kelola Pemasukan (Stats Card) TIDAK SINKRON dengan
+total di Export/Cetak karena menggunakan sumber data yang BERBEDA.
+
+ROOT CAUSE:
+-----------
+❌ Stats Card di kelola_pemasukan_page.dart menggunakan:
+   - jenisIuranProvider.allJenisIuranList  ✅ (semua data)
+   - pemasukanLainProvider.pemasukanList   ❌ (data yang TERFILTER!)
+
+   Ketika user memilih filter (misal: "Menunggu", "Terverifikasi"),
+   pemasukanList hanya berisi data yang sesuai filter tersebut.
+
+✅ Export menggunakan:
+   - Query langsung ke Firestore untuk SEMUA data aktif
+   - Tidak terpengaruh filter UI
+
+AKIBATNYA:
+----------
+- Stats Card menampilkan total yang BERBEDA tergantung filter aktif
+- Export menampilkan total yang BENAR (semua data aktif)
+- User bingung karena angkanya tidak sama!
+
+SOLUSI YANG DITERAPKAN:
+------------------------
+
+1. MENAMBAH GETTER DI PemasukanLainProvider ✅
+
+   File: lib/core/providers/pemasukan_lain_provider.dart
+
+   a) Tambah variable untuk simpan SEMUA data (unfiltered):
+      List<PemasukanLainModel> _allPemasukanList = [];
+
+   b) Tambah subscription terpisah untuk stream semua data:
+      StreamSubscription<List<PemasukanLainModel>>? _allPemasukanSubscription;
+
+   c) Tambah getter untuk akses data:
+      List<PemasukanLainModel> get allPemasukanList => _allPemasukanList;
+
+   d) Tambah method untuk load semua data:
+      void _loadAllPemasukanLain() {
+        // Subscribe to ALL data stream (tidak terfilter)
+        _allPemasukanSubscription = _service.getPemasukanLainStream().listen(...);
+      }
+
+   e) Panggil method ini setiap kali loadPemasukanLain dipanggil:
+      void loadPemasukanLain({String? status}) {
+        // ... existing code ...
+        _loadAllPemasukanLain(); // ✅ DITAMBAHKAN
+      }
+
+   f) Update dispose untuk cancel subscription:
+      void dispose() {
+        _pemasukanSubscription?.cancel();
+        _allPemasukanSubscription?.cancel(); // ✅ DITAMBAHKAN
+        super.dispose();
+      }
+
+2. UPDATE STATS CARD DI kelola_pemasukan_page.dart ✅
+
+   File: lib/features/keuangan/kelola_pemasukan/kelola_pemasukan_page.dart
+
+   BEFORE (SALAH):
+   ```dart
+   final pemasukanList = pemasukanLainProvider.pemasukanList;
+   // ❌ Ini terfilter sesuai UI!
+   ```
+
+   AFTER (BENAR):
+   ```dart
+   final pemasukanList = pemasukanLainProvider.allPemasukanList;
+   // ✅ Ini SEMUA data, tidak terfilter!
+   ```
+
+HASIL AKHIR:
+-------------
+
+Sekarang SEMUA tempat menggunakan data yang SAMA:
+
+┌──────────────────────────────────────────────────────────────────┐
+│                     KONSISTENSI DATA                             │
+├──────────────────────────────────────────────────────────────────┤
+│ 1. Stats Card (Kelola Pemasukan)                                │
+│    └─> allJenisIuranList + allPemasukanList                     │
+│                                                                  │
+│ 2. Export/Cetak                                                  │
+│    └─> Query Firestore: jenis_iuran + pemasukan_lain           │
+│        WHERE isActive = true                                     │
+│                                                                  │
+│ 3. Dashboard (keuangan_summary_service)                         │
+│    └─> Query Firestore: jenis_iuran + pemasukan_lain           │
+│        WHERE isActive = true                                     │
+└──────────────────────────────────────────────────────────────────┘
+
+KEUNTUNGAN:
+-----------
+✅ Total SAMA di Stats Card dan Export/Cetak
+✅ Tidak terpengaruh filter UI yang dipilih user
+✅ Real-time updates (karena menggunakan stream)
+✅ Konsisten dengan Dashboard
+✅ Data akurat dan reliable
+
+CARA KERJA:
+-----------
+1. Provider sekarang maintain 2 list:
+   - pemasukanList: Data yang terfilter (untuk tampilan list)
+   - allPemasukanList: SEMUA data (untuk stats/total)
+
+2. Stats Card SELALU menggunakan allPemasukanList
+
+3. Ketika user filter data:
+   - List di UI berubah (pemasukanList terfilter)
+   - Stats Card tetap sama (allPemasukanList tidak terpengaruh)
+
+4. Export juga query semua data, jadi hasilnya sama dengan Stats Card
+
+TESTING:
+--------
+1. Buka Kelola Pemasukan → Lihat total di Stats Card
+2. Filter ke "Menunggu" → List berubah, tapi Stats Card TETAP
+3. Filter ke "Terverifikasi" → List berubah, tapi Stats Card TETAP
+4. Klik Export → Total di file SAMA dengan Stats Card
+5. Buka Dashboard → Total SAMA dengan Kelola Pemasukan
+
+CATATAN PENTING:
+----------------
+❗ allPemasukanList akan selalu diupdate real-time via stream
+❗ Tidak perlu manual refresh karena menggunakan StreamSubscription
+❗ Automatic cleanup di dispose() untuk prevent memory leaks
+
+================================================================================
+FILE YANG DIUBAH:
+================================================================================
+
+1. lib/core/providers/pemasukan_lain_provider.dart
+   - Added: _allPemasukanList variable
+   - Added: _allPemasukanSubscription
+   - Added: allPemasukanList getter
+   - Added: _loadAllPemasukanLain() method
+   - Modified: loadPemasukanLain() to call _loadAllPemasukanLain()
+   - Modified: dispose() to cancel both subscriptions
+
+2. lib/features/keuangan/kelola_pemasukan/kelola_pemasukan_page.dart
+   - Modified: _buildDynamicStatsCard() to use allPemasukanList
+
+================================================================================
+STATUS: ✅ SELESAI & TESTED
+DATE: 20 November 2025
+NO COMPILATION ERRORS: ✅
+================================================================================
+

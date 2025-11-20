@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'firebase_options.dart';
 import 'app/app.dart';
@@ -23,7 +22,12 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // TEST FIRESTORE CONNECTION IMMEDIATELY
+  // ============================================================================
+  // CONNECTION TEST DISABLED
+  // Reason: Causes permission-denied error in production
+  // Only enable for debugging if needed
+  // ============================================================================
+  /*
   print('\n🔥 ========== FIRESTORE CONNECTION TEST ==========');
   try {
     final firestore = FirebaseFirestore.instance;
@@ -59,6 +63,9 @@ void main() async {
     print('❌ StackTrace: $stackTrace');
     print('❌ ==========================================\n');
   }
+  */
+
+  print('✅ Firebase initialized successfully');
 
   // Initialize Indonesian locale for date formatting
   await initializeDateFormatting('id_ID', null);
