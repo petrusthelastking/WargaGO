@@ -31,25 +31,13 @@ from api.inference import predict_image
 router = APIRouter()
 
 
-@router.get("/")
-async def root():
-    """Root endpoint"""
-    return {
-        "message": "Vegetable Classification API",
-        "docs": "/docs",
-        "health": "/health"
-    }
-
-
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint"""
-    models_status = model_manager.get_models_status()
     available_models = model_manager.get_loaded_models()
     
     return HealthResponse(
         status="healthy" if len(available_models) > 0 else "unhealthy",
-        models_loaded=models_status,
         device=str(DEVICE),
         num_classes=len(CLASS_NAMES),
         class_names=CLASS_NAMES,
@@ -70,23 +58,26 @@ async def get_models_info():
     
     for model_type in MODEL_PATHS.keys():
         model_loaded = model_manager.is_loaded(model_type)
-        model_path = MODEL_PATHS[model_type]
         
         info_dict = {
             "loaded": model_loaded,
-            "path": model_path,
-            "exists": os.path.exists(model_path)
         }
         
         if model_type == "mlp":
             info_dict["architecture"] = "Simple MLP"
             info_dict["hidden_layers"] = "512 -> 256"
             info_dict["dropout"] = 0.5
+            info_dict["features"] = ["Simple Linear Layers"]
         elif model_type == "mlpv2":
             info_dict["architecture"] = "MLP with Residual Connections"
             info_dict["hidden_layers"] = "256 -> 512 -> 256 -> 128"
             info_dict["dropout"] = "Progressive (0.3 -> 0.15 -> 0.075 -> 0.0375)"
             info_dict["features"] = ["Residual Blocks", "BatchNorm", "Kaiming Init"]
+        elif model_type == "mlpv2_auto-clahe":
+            info_dict["architecture"] = "MLP with Residual Connections + Auto-CLAHE"
+            info_dict["hidden_layers"] = "256 -> 512 -> 256 -> 128"
+            info_dict["dropout"] = "Progressive (0.3 -> 0.15 -> 0.075 -> 0.0375)"
+            info_dict["features"] = ["Residual Blocks", "BatchNorm", "Kaiming Init", "Auto Brightness/Contrast", "CLAHE Enhancement"]
         
         models_info[model_type] = ModelInfo(**info_dict)
     
@@ -102,7 +93,8 @@ async def predict(
     file: UploadFile = File(..., description="Image file to classify"),
     use_segmentation: bool = Query(True, description="Whether to use segmentation"),
     seg_method: str = Query("u2netp", description="Segmentation method: hsv, grabcut, adaptive, u2netp, none"),
-    model_type: str = Query("mlpv2", description="Model type to use: mlp, mlpv2")
+    model_type: str = Query("mlpv2_auto-clahe", description="Model type to use: mlp, mlpv2, mlpv2_auto-clahe"),
+    apply_brightness_contrast: bool = Query(True, description="Apply brightness and contrast enhancement (CLAHE)")
 ):
     """
     Predict vegetable class from image
@@ -152,17 +144,20 @@ async def predict(
             model=model,
             image=image,
             use_segmentation=use_segmentation,
-            seg_method=seg_method
+            seg_method=seg_method,
+            apply_brightness_contrast=apply_brightness_contrast
         )
         
         return PredictionResponse(
+            filename=file.filename,
             predicted_class=predicted_class,
             confidence=confidence_value,
             all_confidences=all_confidences,
             device=str(DEVICE),
             model_type=model_type,
             segmentation_used=use_segmentation,
-            segmentation_method=seg_method if use_segmentation else None
+            segmentation_method=seg_method if use_segmentation else None,
+            apply_brightness_contrast=apply_brightness_contrast
         )
     
     except Exception as e:
@@ -176,8 +171,9 @@ async def predict(
 async def batch_predict(
     files: List[UploadFile] = File(..., description="Multiple image files to classify"),
     use_segmentation: bool = Query(True, description="Whether to use segmentation"),
-    seg_method: str = Query("hsv", description="Segmentation method: hsv, grabcut, adaptive, u2netp, none"),
-    model_type: str = Query("mlp", description="Model type to use: mlp, mlpv2")
+    seg_method: str = Query("u2netp", description="Segmentation method: hsv, grabcut, adaptive, u2netp, none"),
+    model_type: str = Query("mlpv2_auto-clahe", description="Model type to use: mlp, mlpv2"),
+    apply_brightness_contrast: bool = Query(True, description="Apply brightness and contrast enhancement (CLAHE)")
 ):
     """
     Predict multiple images at once
@@ -227,7 +223,8 @@ async def batch_predict(
                 model=model,
                 image=image,
                 use_segmentation=use_segmentation,
-                seg_method=seg_method
+                seg_method=seg_method,
+                apply_brightness_contrast=apply_brightness_contrast
             )
             
             results.append(BatchPredictionResult(
@@ -235,7 +232,11 @@ async def batch_predict(
                 predicted_class=predicted_class,
                 confidence=confidence_value,
                 all_confidences=all_confidences,
-                model_type=model_type
+                device=str(DEVICE),
+                model_type=model_type,
+                segmentation_used=use_segmentation,
+                segmentation_method=seg_method if use_segmentation else None,
+                apply_brightness_contrast=apply_brightness_contrast
             ))
         
         except Exception as e:
