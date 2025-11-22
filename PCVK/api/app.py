@@ -20,7 +20,7 @@ from api.configs.config import (
     CORS_HEADERS
 )
 from api.configs.pcvk_config import DEVICE
-from api.routes.api_route import router
+from api.routes.pcvk_route import router
 from api.routes.storage_public_route import public_storage_router
 from api.routes.storage_private_route import private_storage_router
 from api.services.classification.gradio_interface import create_gradio_interface

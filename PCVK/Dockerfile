@@ -22,10 +22,12 @@ COPY requirements-docker.txt .
 RUN echo "USE_CUDA is set to: $USE_CUDA" && \
     if [ "$USE_CUDA" = "true" ]; then \
         echo "Installing CUDA version..." && \
-        pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cu130; \
+        pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cu130 && \
+        pip install onnxruntime-gpu; \
     else \
         echo "Installing CPU version..." && \
-        pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu; \
+        pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
+        pip install onnxruntime; \
     fi
 
 RUN pip install --no-cache-dir -r requirements-docker.txt
