@@ -3,6 +3,7 @@ Azure-specific API routes with Firebase authentication
 """
 
 from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
+from typing import Optional
 from PIL import Image
 import io
 
@@ -12,12 +13,13 @@ from api.services.azure_storage import azure_storage
 
 
 # Create router
-azure_router = APIRouter(prefix="/azure", tags=["Azure"])
+azure_router = APIRouter(prefix="/azure", tags=["Azure Blob Storage"])
 
 
 @azure_router.post("/upload", response_model=StorageResponse)
 async def upload_image(
     file: UploadFile = File(..., description="Image file to store"),
+    custom_name: Optional[str] = None,
     user_info: dict = Depends(get_current_user),
 ):
     """
@@ -37,7 +39,7 @@ async def upload_image(
         # Upload to Azure
         user_id = user_info.get("uid", "unknown")
         blob_name, blob_url = azure_storage.upload_image(
-            image=image, user_id=user_id, filename=file.filename
+            image=image, user_id=user_id, filename=file.filename, custom_name=custom_name
         )
 
         if not blob_name:
@@ -58,6 +60,43 @@ async def upload_image(
     except Exception as e:
         print(f"Error uploading image: {e}")
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+@azure_router.get("/get-images")
+async def get_images(uid: Optional[str] = None):
+    """
+    Get list of images by user ID (no authentication required)
+    
+    Args:
+        uid: Optional user ID. If not provided, returns all images.
+    
+    Returns:
+        List of images with their URLs
+    """
+    try:
+        if uid:
+            # Get images for specific user
+            blob_names = azure_storage.list_user_blobs(uid)
+        else:
+            # Get all images
+            blob_names = azure_storage.list_user_blobs()
+        
+        # Generate SAS URLs for each blob
+        images = []
+        for blob_name in blob_names:
+            sas_url = azure_storage.get_blob_url_with_sas(blob_name, expiry_hours=24)
+            if sas_url:
+                images.append({"blob_name": blob_name, "url": sas_url})
+        
+        return {
+            "user_id": uid if uid else "all",
+            "count": len(images),
+            "images": images
+        }
+    
+    except Exception as e:
+        print(f"Error listing images: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list images: {str(e)}")
 
 
 @azure_router.get("/my-images", response_model=UserImagesResponse)

@@ -12,6 +12,7 @@ from azure.storage.blob import (
     BlobSasPermissions,
     generate_blob_sas,
     BlobClient,
+    ContentSettings,
 )
 from azure.core.exceptions import AzureError
 
@@ -94,6 +95,7 @@ class AzureBlobStorage:
         image: Image.Image,
         user_id: str,
         filename: Optional[str] = None,
+        custom_name: Optional[str] = None,
         metadata: Optional[dict] = None,
     ) -> Tuple[Optional[str], Optional[str]]:
         """
@@ -103,6 +105,7 @@ class AzureBlobStorage:
             image: PIL Image object
             user_id: User ID from Firebase auth
             filename: Optional original filename
+            custom_name: Optional custom name for the blob (without extension)
             metadata: Optional metadata dictionary
 
         Returns:
@@ -114,9 +117,20 @@ class AzureBlobStorage:
 
         try:
             # Generate unique blob name
-            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            unique_id = str(uuid.uuid4())[:8]
-            blob_name = f"{user_id}/{timestamp}_{unique_id}.webp"
+            if custom_name:
+                # Use custom name, ensure it ends with .webp
+                safe_name = custom_name.replace("/", "_").replace("\\", "_")
+                if not safe_name.endswith(".webp"):
+                    safe_name = (
+                        safe_name.rsplit(".", 1)[0] if "." in safe_name else safe_name
+                    )
+                    safe_name += ".webp"
+                blob_name = f"{user_id}/{safe_name}"
+            else:
+                # Generate timestamp-based name
+                timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+                unique_id = str(uuid.uuid4())[:8]
+                blob_name = f"{user_id}/{timestamp}_{unique_id}.webp"
 
             # Convert image to WebP
             webp_bytes = self.convert_to_webp(image)
@@ -138,7 +152,7 @@ class AzureBlobStorage:
                 webp_bytes,
                 overwrite=True,
                 metadata=blob_metadata,
-                content_settings={"content_type": "image/webp"},
+                content_settings=ContentSettings(content_type="image/webp"),
             )
 
             # Get blob URL
@@ -218,7 +232,7 @@ class AzureBlobStorage:
             print(f"Error deleting blob: {e}")
             return False
 
-    def list_user_blobs(self, user_id: str) -> list:
+    def list_user_blobs(self, user_id: str = None) -> list:
         """
         List all blobs for a specific user
 
@@ -232,7 +246,10 @@ class AzureBlobStorage:
             return []
 
         try:
-            blobs = self.container_client.list_blobs(name_starts_with=f"{user_id}/")
+            if user_id is None:
+                blobs = self.container_client.list_blobs()
+            else:
+                blobs = self.container_client.list_blobs(name_starts_with=f"{user_id}/")
             return [blob.name for blob in blobs]
 
         except Exception as e:
