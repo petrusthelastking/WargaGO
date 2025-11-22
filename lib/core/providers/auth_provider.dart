@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:jawara/core/models/user_model.dart';
 import 'package:jawara/core/services/firestore_service.dart';
 
 class AuthProvider with ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirestoreService _firestoreService = FirestoreService();
 
   UserModel? _userModel;
@@ -15,16 +17,13 @@ class AuthProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _isAuthenticated;
 
-  // Sign in with email and password
-  Future<bool> signIn({
-    required String email,
-    required String password,
-  }) async {
+  // Sign in with email and password using Firebase Auth
+  Future<bool> signIn({required String email, required String password}) async {
     try {
       print('\n=== LOGIN ATTEMPT ===');
       print('Email: $email');
       print('Password length: ${password.length}');
-      
+
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
@@ -38,14 +37,35 @@ class AuthProvider with ChangeNotifier {
         return false;
       }
 
-      // Get user from Firestore
-      print('🔍 Searching user in Firestore...');
-      final user = await _firestoreService.getUserByEmail(email);
+      // Sign in with Firebase Auth
+      print('🔐 Signing in with Firebase Auth...');
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (userCredential.user == null) {
+        print('❌ Firebase Auth user is null');
+        _errorMessage = 'Login gagal';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      print('✅ Firebase Auth successful!');
+      print('Firebase UID: ${userCredential.user!.uid}');
+
+      // Get user data from Firestore using UID
+      print('🔍 Getting user data from Firestore...');
+      final user = await _firestoreService.getUserById(
+        userCredential.user!.uid,
+      );
 
       if (user == null) {
         print('❌ User not found in Firestore');
-        print('⚠️  PASTIKAN sudah buat admin di Firestore Console!');
-        _errorMessage = 'Email tidak ditemukan. Pastikan admin sudah dibuat di Firestore Console.';
+        print('⚠️  User exists in Firebase Auth but not in Firestore!');
+        await _auth.signOut();
+        _errorMessage = 'Data pengguna tidak ditemukan';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -57,25 +77,11 @@ class AuthProvider with ChangeNotifier {
       print('  - Nama: ${user.nama}');
       print('  - Role: ${user.role}');
       print('  - Status: ${user.status}');
-      print('  - Password from DB: ${user.password}');
-      print('  - Password input: $password');
-
-      // Verify password
-      if (user.password != password) {
-        print('❌ Password tidak cocok!');
-        print('   DB password: "${user.password}"');
-        print('   Input password: "$password"');
-        _errorMessage = 'Password salah';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      print('✅ Password cocok!');
 
       // Check if user status is approved
       if (user.status != 'approved') {
         print('❌ Status bukan approved: ${user.status}');
+        await _auth.signOut();
         if (user.status == 'pending') {
           _errorMessage = 'Akun Anda masih menunggu persetujuan admin';
         } else if (user.status == 'rejected') {
@@ -97,6 +103,38 @@ class AuthProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return true;
+    } on FirebaseAuthException catch (e) {
+      print('\n❌ Firebase Auth Error ===');
+      print('Error code: ${e.code}');
+      print('Error message: ${e.message}');
+
+      switch (e.code) {
+        case 'user-not-found':
+          _errorMessage = 'Email tidak terdaftar';
+          break;
+        case 'wrong-password':
+          _errorMessage = 'Password salah';
+          break;
+        case 'invalid-email':
+          _errorMessage = 'Format email tidak valid';
+          break;
+        case 'user-disabled':
+          _errorMessage = 'Akun telah dinonaktifkan';
+          break;
+        case 'too-many-requests':
+          _errorMessage =
+              'Terlalu banyak percobaan login. Silakan coba lagi nanti';
+          break;
+        case 'invalid-credential':
+          _errorMessage = 'Email atau password salah';
+          break;
+        default:
+          _errorMessage = 'Login gagal: ${e.message}';
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return false;
     } catch (e, stackTrace) {
       print('\n❌ LOGIN ERROR ===');
       print('Error: $e');
@@ -109,7 +147,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Sign up / Register
+  // Sign up / Register using Firebase Auth
   Future<bool> signUp({
     required String email,
     required String password,
@@ -137,31 +175,37 @@ class AuthProvider with ChangeNotifier {
         return false;
       }
 
-      print('Checking if email exists...');
-      // Check if user already exists
-      final exists = await _firestoreService.userExistsByEmail(email);
-      print('Email exists: $exists');
+      // Create user with Firebase Auth
+      print('🔐 Creating Firebase Auth user...');
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-      if (exists) {
-        _errorMessage = 'Email sudah terdaftar';
+      if (userCredential.user == null) {
+        print('❌ Failed to create Firebase Auth user');
+        _errorMessage = 'Gagal membuat akun';
         _isLoading = false;
         notifyListeners();
         return false;
       }
 
-      print('Creating user model...');
-      // Create new ADMIN user with APPROVED status (no verification needed)
+      print('✅ Firebase Auth user created!');
+      print('Firebase UID: ${userCredential.user!.uid}');
+
+      // Create user data in Firestore (using Firebase UID as document ID)
+      print('Creating user document in Firestore...');
       final newUser = UserModel(
-        id: '', // Will be set by Firestore
+        id: userCredential.user!.uid, // Use Firebase UID
         email: email,
         nama: nama,
         nik: nik,
         jenisKelamin: jenisKelamin,
         noTelepon: noTelepon,
         alamat: alamat,
-        role: 'admin', // Changed to 'admin'
-        status: 'approved', // Changed to 'approved'
-        password: password,
+        role: 'admin',
+        status: 'approved',
+        password: null, // No longer store password in Firestore
         createdAt: DateTime.now(),
       );
 
@@ -170,16 +214,47 @@ class AuthProvider with ChangeNotifier {
       print('User ID: $userId');
 
       if (userId == null) {
+        // Rollback: Delete Firebase Auth user if Firestore save fails
+        print('⚠️ Firestore save failed, deleting Firebase Auth user...');
+        await userCredential.user!.delete();
         _errorMessage = 'Gagal menyimpan data ke database';
         _isLoading = false;
         notifyListeners();
         return false;
       }
 
+      // Sign out after registration (user needs to login)
+      await _auth.signOut();
+
       print('=== REGISTRATION SUCCESS ===');
       _isLoading = false;
       notifyListeners();
       return true;
+    } on FirebaseAuthException catch (e) {
+      print('=== Firebase Auth Error ===');
+      print('Error code: ${e.code}');
+      print('Error message: ${e.message}');
+
+      switch (e.code) {
+        case 'email-already-in-use':
+          _errorMessage = 'Email sudah terdaftar';
+          break;
+        case 'invalid-email':
+          _errorMessage = 'Format email tidak valid';
+          break;
+        case 'weak-password':
+          _errorMessage = 'Password terlalu lemah (minimal 6 karakter)';
+          break;
+        case 'operation-not-allowed':
+          _errorMessage = 'Registrasi tidak diizinkan';
+          break;
+        default:
+          _errorMessage = 'Registrasi gagal: ${e.message}';
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return false;
     } catch (e, stackTrace) {
       print('=== REGISTRATION ERROR ===');
       print('Error: $e');
@@ -191,19 +266,43 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Sign out
+  // Sign out from Firebase Auth
   Future<void> signOut() async {
+    await _auth.signOut();
     _userModel = null;
     _isAuthenticated = false;
     _errorMessage = null;
     notifyListeners();
   }
 
-  // Check authentication status
+  // Check authentication status from Firebase Auth
   Future<bool> checkAuthStatus() async {
-    // For now, we just return the current authentication status
-    // In a real app, you might want to check for a stored session token
-    return _isAuthenticated;
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        _isAuthenticated = false;
+        _userModel = null;
+        return false;
+      }
+
+      // Get user data from Firestore
+      final user = await _firestoreService.getUserById(currentUser.uid);
+      if (user == null || user.status != 'approved') {
+        await _auth.signOut();
+        _isAuthenticated = false;
+        _userModel = null;
+        return false;
+      }
+
+      _userModel = user;
+      _isAuthenticated = true;
+      return true;
+    } catch (e) {
+      print('Error checking auth status: $e');
+      _isAuthenticated = false;
+      _userModel = null;
+      return false;
+    }
   }
 
   // Clear error message
@@ -212,4 +311,3 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 }
-
