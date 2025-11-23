@@ -16,6 +16,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:jawara/features/auth/lupa_page.dart';
 import 'package:provider/provider.dart';
 import 'package:jawara/features/dashboard/dashboard_page.dart';
 import 'package:jawara/features/auth/register_page.dart';
@@ -298,14 +299,9 @@ class _LoginFieldsState extends State<_LoginFields> {
 
   /// Handle forgot password
   void _handleForgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Fitur lupa password belum tersedia',
-          style: GoogleFonts.poppins(),
-        ),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const LupaPage()));
   }
 
   @override
@@ -340,7 +336,8 @@ class _LoginFieldsState extends State<_LoginFields> {
             obscureText: _obscurePassword,
             suffixIcon: PasswordVisibilityToggle(
               isObscure: _obscurePassword,
-              onToggle: () => setState(() => _obscurePassword = !_obscurePassword),
+              onToggle: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
