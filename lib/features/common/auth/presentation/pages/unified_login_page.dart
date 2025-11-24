@@ -16,11 +16,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:jawara/core/constants/app_routes.dart';
-import 'package:jawara/features/common/auth/presentation/pages/warga/lupa_page.dart';
 import 'package:provider/provider.dart';
-import 'package:jawara/features/admin/dashboard/dashboard_page.dart';
-import 'package:jawara/features/common/auth/presentation/pages/warga/warga_register_page.dart';
 import 'package:jawara/core/providers/auth_provider.dart';
 import 'package:jawara/features/common/auth/presentation/widgets/auth_constants.dart';
 import 'package:jawara/features/common/auth/presentation/widgets/auth_widgets.dart';
@@ -288,41 +286,22 @@ class _LoginFieldsState extends State<_LoginFields> {
       // Redirect berdasarkan role
       if (user?.role == 'admin') {
         // Admin -> Dashboard Admin
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const DashboardPage()),
-          (route) => false,
-        );
+        context.go(AppRoutes.adminDashboard);
       } else if (user?.role == 'warga') {
         final status = user?.status;
         // Cek status verifikasi warga
         if (status == 'approved') {
           // Warga sudah disetujui -> ke dashboard
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.wargaDashboard,
-            (route) => false,
-          );
+          context.go(AppRoutes.wargaDashboard);
         } else if (status == 'pending') {
           // Masih menunggu approval
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.pending,
-            (route) => false,
-          );
+          context.go(AppRoutes.pending);
         } else if (status == 'rejected') {
           // Ditolak admin
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.rejected,
-            (route) => false,
-          );
+          context.go(AppRoutes.rejected);
         } else {
           // Status unverified -> belum upload KYC
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.wargaKYC,
-            (route) => false,
-          );
+          context.go(AppRoutes.wargaKYC);
         }
       }
     } else {
@@ -378,10 +357,7 @@ class _LoginFieldsState extends State<_LoginFields> {
         // Redirect berdasarkan role
         if (user?.role == 'admin') {
           // Admin -> Dashboard Admin
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const DashboardPage()),
-            (route) => false,
-          );
+          context.go(AppRoutes.adminDashboard);
         } else if (user?.role == 'warga') {
           // Warga -> Check status verifikasi
           if (user?.status == 'pending') {
@@ -406,14 +382,10 @@ class _LoginFieldsState extends State<_LoginFields> {
 
           if (user?.status == 'approved') {
             // Warga approved -> Dashboard Warga
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/warga/dashboard', (route) => false);
+            context.go(AppRoutes.wargaDashboard);
           } else {
             // Unverified -> Upload KYC
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/warga/kyc', (route) => false);
+            context.go(AppRoutes.wargaKYC);
           }
         } else {
           // User baru dari Google Sign-In (belum ada role)
@@ -442,11 +414,7 @@ class _LoginFieldsState extends State<_LoginFields> {
   }
 
   /// Handle forgot password
-  void _handleForgotPassword() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const LupaPage()));
-  }
+  void _handleForgotPassword() => context.push(AppRoutes.forgotPassword);
 
   @override
   Widget build(BuildContext context) {
@@ -592,51 +560,51 @@ class _LoginFieldsState extends State<_LoginFields> {
 // SIGNUP PROMPT WIDGET
 // ============================================================================
 /// Prompt untuk register akun baru
-class _SignupPrompt extends StatelessWidget {
-  const _SignupPrompt();
+// class _SignupPrompt extends StatelessWidget {
+//   const _SignupPrompt();
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: RichText(
-        text: TextSpan(
-          text: 'Admin baru? ',
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            color: AuthColors.textSecondary,
-          ),
-          children: [
-            WidgetSpan(
-              alignment: PlaceholderAlignment.baseline,
-              baseline: TextBaseline.alphabetic,
-              child: TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const WargaRegisterPage(),
-                    ),
-                  );
-                },
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  foregroundColor: AuthColors.primary,
-                  textStyle: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                child: const Text('Register'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Center(
+//       child: RichText(
+//         text: TextSpan(
+//           text: 'Admin baru? ',
+//           style: GoogleFonts.poppins(
+//             fontSize: 13,
+//             color: AuthColors.textSecondary,
+//           ),
+//           children: [
+//             WidgetSpan(
+//               alignment: PlaceholderAlignment.baseline,
+//               baseline: TextBaseline.alphabetic,
+//               child: TextButton(
+//                 onPressed: () {
+//                   Navigator.push(
+//                     context,
+//                     MaterialPageRoute(
+//                       builder: (context) => const WargaRegisterPage(),
+//                     ),
+//                   );
+//                 },
+//                 style: TextButton.styleFrom(
+//                   padding: EdgeInsets.zero,
+//                   minimumSize: Size.zero,
+//                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+//                   foregroundColor: AuthColors.primary,
+//                   textStyle: GoogleFonts.poppins(
+//                     fontSize: 13,
+//                     fontWeight: FontWeight.w600,
+//                   ),
+//                 ),
+//                 child: const Text('Register'),
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 // ============================================================================
 // DECORATIVE BACKGROUND WIDGET

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'package:jawara/core/widgets/app_bottom_navigation.dart';
+import 'package:jawara/core/widgets/admin_app_bottom_navigation.dart';
 import 'package:jawara/core/widgets/export_dialog.dart';
 import 'package:jawara/core/services/keuangan_summary_service.dart';
 import 'package:jawara/core/providers/jenis_iuran_provider.dart';
@@ -43,7 +43,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
       'jumlah': 'Rp 50.000,00',
       'nominal': 'Rp 50.000,00',
       'kategori': 'Pemeliharaan Fasilitas',
-      'verifikator': 'Admin Jawara'
+      'verifikator': 'Admin Jawara',
     },
     {
       'id': 2,
@@ -54,7 +54,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
       'jumlah': 'Rp 200.000,00',
       'nominal': 'Rp 200.000,00',
       'kategori': 'Iuran Warga',
-      'verifikator': 'Admin Jawara'
+      'verifikator': 'Admin Jawara',
     },
     {
       'id': 3,
@@ -65,7 +65,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
       'jumlah': 'Rp 500.000,00',
       'nominal': 'Rp 500.000,00',
       'kategori': 'Donasi',
-      'verifikator': 'Admin Jawara'
+      'verifikator': 'Admin Jawara',
     },
   ];
 
@@ -80,7 +80,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
       'jumlah': 'Rp 11.000',
       'nominal': 'Rp 11.000',
       'kategori': 'Dana Bantuan Pemerintah',
-      'verifikator': 'Admin Jawara'
+      'verifikator': 'Admin Jawara',
     },
     {
       'id': 2,
@@ -91,7 +91,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
       'jumlah': 'Rp 50.000',
       'nominal': 'Rp 50.000',
       'kategori': 'Iuran Warga',
-      'verifikator': 'Admin Jawara'
+      'verifikator': 'Admin Jawara',
     },
     {
       'id': 3,
@@ -102,7 +102,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
       'jumlah': 'Rp 25.000',
       'nominal': 'Rp 25.000',
       'kategori': 'Dana Kegiatan',
-      'verifikator': 'Admin Jawara'
+      'verifikator': 'Admin Jawara',
     },
     {
       'id': 4,
@@ -113,7 +113,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
       'jumlah': 'Rp 100.000',
       'nominal': 'Rp 100.000',
       'kategori': 'Donasi',
-      'verifikator': 'Admin Jawara'
+      'verifikator': 'Admin Jawara',
     },
     {
       'id': 5,
@@ -124,7 +124,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
       'jumlah': 'Rp 75.000',
       'nominal': 'Rp 75.000',
       'kategori': 'Iuran Bulanan',
-      'verifikator': 'Admin Jawara'
+      'verifikator': 'Admin Jawara',
     },
   ];
 
@@ -169,10 +169,17 @@ class _KeuanganPageState extends State<KeuanganPage> {
     final sourceData = _showPengeluaran ? _mockPengeluaran : _mockPemasukan;
 
     return sourceData.where((report) {
-      final matchesSearch = _searchQuery.isEmpty ||
-          report['title'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          report['subtitle'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          report['kategori'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesSearch =
+          _searchQuery.isEmpty ||
+          report['title'].toString().toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          ) ||
+          report['subtitle'].toString().toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          ) ||
+          report['kategori'].toString().toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          );
       return matchesSearch;
     }).toList();
   }
@@ -187,7 +194,8 @@ class _KeuanganPageState extends State<KeuanganPage> {
         final jenisIuranProvider = context.read<JenisIuranProvider>();
         final pemasukanLainProvider = context.read<PemasukanLainProvider>();
         final pengeluaranProvider = context.read<PengeluaranProvider>();
-        final laporanDetailProvider = context.read<LaporanKeuanganDetailProvider>();
+        final laporanDetailProvider = context
+            .read<LaporanKeuanganDetailProvider>();
 
         // Add listeners to reload data when providers notify
         jenisIuranProvider.addListener(_onProviderDataChanged);
@@ -219,8 +227,12 @@ class _KeuanganPageState extends State<KeuanganPage> {
     // Remove listeners to prevent memory leaks
     try {
       context.read<JenisIuranProvider>().removeListener(_onProviderDataChanged);
-      context.read<PemasukanLainProvider>().removeListener(_onProviderDataChanged);
-      context.read<PengeluaranProvider>().removeListener(_onProviderDataChanged);
+      context.read<PemasukanLainProvider>().removeListener(
+        _onProviderDataChanged,
+      );
+      context.read<PengeluaranProvider>().removeListener(
+        _onProviderDataChanged,
+      );
     } catch (e) {
       // Ignore if already disposed
     }
@@ -248,8 +260,12 @@ class _KeuanganPageState extends State<KeuanganPage> {
           _isLoadingKeuangan = false;
         });
         debugPrint('✅ KEUANGAN PAGE: Summary loaded successfully');
-        debugPrint('   📊 Total Pemasukan: Rp ${_totalPemasukan.toStringAsFixed(0)}');
-        debugPrint('   📊 Total Pengeluaran: Rp ${_totalPengeluaran.toStringAsFixed(0)}');
+        debugPrint(
+          '   📊 Total Pemasukan: Rp ${_totalPemasukan.toStringAsFixed(0)}',
+        );
+        debugPrint(
+          '   📊 Total Pengeluaran: Rp ${_totalPengeluaran.toStringAsFixed(0)}',
+        );
         debugPrint('   📊 Total Asset: Rp ${_totalAsset.toStringAsFixed(0)}');
         debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       }
@@ -297,7 +313,9 @@ class _KeuanganPageState extends State<KeuanganPage> {
                         Container(
                           decoration: const BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(24),
+                            ),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
@@ -319,11 +337,6 @@ class _KeuanganPageState extends State<KeuanganPage> {
               ],
             ),
           ),
-          Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: const AppBottomNavigation(currentIndex: 2))
         ],
       ),
     );
@@ -376,10 +389,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -399,10 +409,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            Color(0xFFF8FAFF),
-          ],
+          colors: [Colors.white, Color(0xFFF8FAFF)],
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
@@ -418,10 +425,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(
-          color: Colors.white.withOpacity(0.8),
-          width: 1.5,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,7 +435,10 @@ class _KeuanganPageState extends State<KeuanganPage> {
             children: [
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -487,7 +494,9 @@ class _KeuanganPageState extends State<KeuanganPage> {
                     ),
                   ),
                   child: Icon(
-                    _isAssetVisible ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                    _isAssetVisible
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
                     size: 20,
                     color: const Color(0xFF2988EA),
                   ),
@@ -498,7 +507,9 @@ class _KeuanganPageState extends State<KeuanganPage> {
           const SizedBox(height: 20),
           Text(
             _isAssetVisible
-                ? (_isLoadingKeuangan ? 'Memuat...' : _formatCompactCurrency(_totalAsset))
+                ? (_isLoadingKeuangan
+                      ? 'Memuat...'
+                      : _formatCompactCurrency(_totalAsset))
                 : '••••••••••',
             style: GoogleFonts.poppins(
               fontSize: 36,
@@ -556,7 +567,10 @@ class _KeuanganPageState extends State<KeuanganPage> {
                     showTambahMetodePembayaranSheet(context);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -576,7 +590,11 @@ class _KeuanganPageState extends State<KeuanganPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add_circle_outline, size: 18, color: Color(0xFF2988EA)),
+                        const Icon(
+                          Icons.add_circle_outline,
+                          size: 18,
+                          color: Color(0xFF2988EA),
+                        ),
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
@@ -607,7 +625,10 @@ class _KeuanganPageState extends State<KeuanganPage> {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -627,7 +648,11 @@ class _KeuanganPageState extends State<KeuanganPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.list_alt_outlined, size: 18, color: Color(0xFF2988EA)),
+                        const Icon(
+                          Icons.list_alt_outlined,
+                          size: 18,
+                          color: Color(0xFF2988EA),
+                        ),
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
@@ -658,7 +683,9 @@ class _KeuanganPageState extends State<KeuanganPage> {
         Expanded(
           child: _buildKPICard(
             title: 'Total Pengeluaran',
-            amount: _isLoadingKeuangan ? 'Memuat...' : _formatCompactCurrency(_totalPengeluaran),
+            amount: _isLoadingKeuangan
+                ? 'Memuat...'
+                : _formatCompactCurrency(_totalPengeluaran),
             percentage: _pengeluaranPercentage,
             color: const Color(0xFFEF4444),
           ),
@@ -667,7 +694,9 @@ class _KeuanganPageState extends State<KeuanganPage> {
         Expanded(
           child: _buildKPICard(
             title: 'Total Pemasukan',
-            amount: _isLoadingKeuangan ? 'Memuat...' : _formatCompactCurrency(_totalPemasukan),
+            amount: _isLoadingKeuangan
+                ? 'Memuat...'
+                : _formatCompactCurrency(_totalPemasukan),
             percentage: _pemasukanPercentage,
             color: const Color(0xFF10B981),
           ),
@@ -684,8 +713,12 @@ class _KeuanganPageState extends State<KeuanganPage> {
   }) {
     // Tentukan apakah ini card pemasukan atau pengeluaran
     final isPemasukan = title.contains('Pemasukan');
-    final lightColor = isPemasukan ? const Color(0xFFEBF5FF) : const Color(0xFFFEE2E2);
-    final iconData = isPemasukan ? Icons.trending_up_rounded : Icons.trending_down_rounded;
+    final lightColor = isPemasukan
+        ? const Color(0xFFEBF5FF)
+        : const Color(0xFFFEE2E2);
+    final iconData = isPemasukan
+        ? Icons.trending_up_rounded
+        : Icons.trending_down_rounded;
 
     return Container(
       // Fixed height untuk konsistensi
@@ -695,16 +728,10 @@ class _KeuanganPageState extends State<KeuanganPage> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            lightColor.withOpacity(0.5),
-          ],
+          colors: [Colors.white, lightColor.withOpacity(0.5)],
         ),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1.5,
-        ),
+        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: color.withOpacity(0.15),
@@ -775,11 +802,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
                         color: color.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
-                        iconData,
-                        color: color,
-                        size: 18,
-                      ),
+                      child: Icon(iconData, color: color, size: 18),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -810,10 +833,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
           const SizedBox(height: 6),
           // Amount (Nominal) dengan constraint height untuk konsistensi
           Container(
-            constraints: const BoxConstraints(
-              minHeight: 50,
-              maxHeight: 56,
-            ),
+            constraints: const BoxConstraints(minHeight: 50, maxHeight: 56),
             alignment: Alignment.center,
             child: FittedBox(
               fit: BoxFit.scaleDown,
@@ -838,33 +858,34 @@ class _KeuanganPageState extends State<KeuanganPage> {
             height: 40,
             child: ElevatedButton(
               onPressed: () => _showPrintModal(isPemasukan: isPemasukan),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: color,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shadowColor: color.withOpacity(0.4),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ).copyWith(
-                backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                  (Set<MaterialState> states) {
-                    if (states.contains(MaterialState.pressed)) {
-                      return color.withOpacity(0.8);
-                    }
-                    return color;
-                  },
-                ),
-                elevation: MaterialStateProperty.resolveWith<double>(
-                  (Set<MaterialState> states) {
-                    if (states.contains(MaterialState.pressed)) {
-                      return 2;
-                    }
-                    return 4;
-                  },
-                ),
-              ),
+              style:
+                  ElevatedButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shadowColor: color.withOpacity(0.4),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ).copyWith(
+                    backgroundColor: MaterialStateProperty.resolveWith<Color>((
+                      Set<MaterialState> states,
+                    ) {
+                      if (states.contains(MaterialState.pressed)) {
+                        return color.withOpacity(0.8);
+                      }
+                      return color;
+                    }),
+                    elevation: MaterialStateProperty.resolveWith<double>((
+                      Set<MaterialState> states,
+                    ) {
+                      if (states.contains(MaterialState.pressed)) {
+                        return 2;
+                      }
+                      return 4;
+                    }),
+                  ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -903,7 +924,9 @@ class _KeuanganPageState extends State<KeuanganPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const KelolaPemasukanPage()),
+                    MaterialPageRoute(
+                      builder: (context) => const KelolaPemasukanPage(),
+                    ),
                   );
                 },
                 height: 130,
@@ -920,7 +943,9 @@ class _KeuanganPageState extends State<KeuanganPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const KelolaPengeluaranPage()),
+                    MaterialPageRoute(
+                      builder: (context) => const KelolaPengeluaranPage(),
+                    ),
                   );
                 },
                 height: 130,
@@ -972,10 +997,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              backgroundColor1,
-              backgroundColor2.withOpacity(0.85),
-            ],
+            colors: [backgroundColor1, backgroundColor2.withOpacity(0.85)],
           ),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
@@ -1042,11 +1064,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 26,
-                  ),
+                  child: Icon(icon, color: Colors.white, size: 26),
                 ),
                 // Label dengan style modern
                 Column(
@@ -1095,7 +1113,6 @@ class _KeuanganPageState extends State<KeuanganPage> {
     );
   }
 
-
   Widget _buildTotalPills() {
     return Row(
       children: [
@@ -1143,10 +1160,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
               ? const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF2988EA),
-                    Color(0xFF2988EA),
-                  ],
+                  colors: [Color(0xFF2988EA), Color(0xFF2988EA)],
                 )
               : null,
           color: isActive ? null : Colors.white,
@@ -1230,10 +1244,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
             decoration: BoxDecoration(
               color: const Color(0xFFF8F9FC),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFFE8EAF2),
-                width: 1.5,
-              ),
+              border: Border.all(color: const Color(0xFFE8EAF2), width: 1.5),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.04),
@@ -1277,10 +1288,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF2988EA),
-                  Color(0xFF2988EA),
-                ],
+                colors: [Color(0xFF2988EA), Color(0xFF2988EA)],
               ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
@@ -1449,16 +1457,10 @@ class _KeuanganPageState extends State<KeuanganPage> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            const Color(0xFFFAFAFA),
-          ],
+          colors: [Colors.white, const Color(0xFFFAFAFA)],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFE8EAF2),
-          width: 1.5,
-        ),
+        border: Border.all(color: const Color(0xFFE8EAF2), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
@@ -1501,7 +1503,10 @@ class _KeuanganPageState extends State<KeuanganPage> {
                       radius: 24,
                       backgroundColor: const Color(0xFF2988EA),
                       child: Text(
-                        report['title'].toString().substring(0, 1).toUpperCase(),
+                        report['title']
+                            .toString()
+                            .substring(0, 1)
+                            .toUpperCase(),
                         style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -1548,7 +1553,9 @@ class _KeuanganPageState extends State<KeuanganPage> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                      isExpanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
                       color: const Color(0xFF6B7280),
                     ),
                   ),
@@ -1557,10 +1564,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
             ),
           ),
           if (isExpanded) ...[
-            Divider(
-              height: 1,
-              color: const Color(0xFFE8EAF2).withOpacity(0.5),
-            ),
+            Divider(height: 1, color: const Color(0xFFE8EAF2).withOpacity(0.5)),
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFFAFAFA).withOpacity(0.5),
@@ -1601,9 +1605,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF2988EA),
-            ),
+            colorScheme: const ColorScheme.light(primary: Color(0xFF2988EA)),
           ),
           child: child!,
         );
@@ -1639,7 +1641,9 @@ class _KeuanganPageState extends State<KeuanganPage> {
             'name': item.namaIuran,
             'category': 'Iuran',
             'nominal': item.jumlahIuran, // Send as number
-            'nominalFormatted': currencyFormat.format(item.jumlahIuran), // For display
+            'nominalFormatted': currencyFormat.format(
+              item.jumlahIuran,
+            ), // For display
             'penerima': item.createdBy.isNotEmpty ? item.createdBy : '-',
             'deskripsi': '-',
             'status': 'Terverifikasi',
@@ -1651,38 +1655,62 @@ class _KeuanganPageState extends State<KeuanganPage> {
         final pemasukanLainProvider = context.read<PemasukanLainProvider>();
         final pemasukanList = pemasukanLainProvider.allPemasukanList;
 
-        print('   ✓ Pemasukan Lain from Provider: ${pemasukanList.length} items');
+        print(
+          '   ✓ Pemasukan Lain from Provider: ${pemasukanList.length} items',
+        );
         for (var item in pemasukanList) {
           exportData.add({
             'tanggal': DateFormat('dd/MM/yyyy').format(item.tanggal),
             'name': item.name,
             'category': item.category,
             'nominal': item.nominal, // Send as number
-            'nominalFormatted': currencyFormat.format(item.nominal), // For display
+            'nominalFormatted': currencyFormat.format(
+              item.nominal,
+            ), // For display
             'penerima': '-',
             'deskripsi': item.deskripsi ?? '-',
             'status': item.status,
           });
         }
-        print('   📦 exportData after Pemasukan Lain: ${exportData.length} items');
+        print(
+          '   📦 exportData after Pemasukan Lain: ${exportData.length} items',
+        );
 
         // Calculate total (same calculation as kelola_pemasukan)
-        final totalJenisIuran = jenisIuranList.fold<double>(0, (sum, item) => sum + item.jumlahIuran);
-        final totalPemasukanLain = pemasukanList.fold<double>(0, (sum, item) => sum + item.nominal);
+        final totalJenisIuran = jenisIuranList.fold<double>(
+          0,
+          (sum, item) => sum + item.jumlahIuran,
+        );
+        final totalPemasukanLain = pemasukanList.fold<double>(
+          0,
+          (sum, item) => sum + item.nominal,
+        );
         final totalPemasukan = totalJenisIuran + totalPemasukanLain;
 
         // Verify total from exportData
-        final totalFromExportData = exportData.fold<double>(0, (sum, item) => sum + (item['nominal'] as double));
+        final totalFromExportData = exportData.fold<double>(
+          0,
+          (sum, item) => sum + (item['nominal'] as double),
+        );
 
         print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         print('💰 VERIFIKASI TOTAL CALCULATION:');
-        print('   📊 Jenis Iuran: Rp ${currencyFormat.format(totalJenisIuran)} (${jenisIuranList.length} items)');
-        print('   📊 Pemasukan Lain: Rp ${currencyFormat.format(totalPemasukanLain)} (${pemasukanList.length} items)');
-        print('   ➕ TOTAL GABUNGAN: Rp ${currencyFormat.format(totalPemasukan)}');
-        print('   ✅ Total dari exportData: Rp ${currencyFormat.format(totalFromExportData)} (${exportData.length} items)');
-        print('   🔍 Match: ${totalPemasukan == totalFromExportData ? "✅ YA" : "❌ TIDAK"}');
+        print(
+          '   📊 Jenis Iuran: Rp ${currencyFormat.format(totalJenisIuran)} (${jenisIuranList.length} items)',
+        );
+        print(
+          '   📊 Pemasukan Lain: Rp ${currencyFormat.format(totalPemasukanLain)} (${pemasukanList.length} items)',
+        );
+        print(
+          '   ➕ TOTAL GABUNGAN: Rp ${currencyFormat.format(totalPemasukan)}',
+        );
+        print(
+          '   ✅ Total dari exportData: Rp ${currencyFormat.format(totalFromExportData)} (${exportData.length} items)',
+        );
+        print(
+          '   🔍 Match: ${totalPemasukan == totalFromExportData ? "✅ YA" : "❌ TIDAK"}',
+        );
         print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
       } else {
         print('📊 Fetching pengeluaran data for export...');
 
@@ -1699,7 +1727,9 @@ class _KeuanganPageState extends State<KeuanganPage> {
           final nominal = (data['nominal'] as num?)?.toDouble() ?? 0;
           exportData.add({
             'tanggal': data['tanggal'] != null
-                ? DateFormat('dd/MM/yyyy').format((data['tanggal'] as Timestamp).toDate())
+                ? DateFormat(
+                    'dd/MM/yyyy',
+                  ).format((data['tanggal'] as Timestamp).toDate())
                 : '-',
             'name': data['judul'] ?? '-',
             'category': data['kategori'] ?? 'Pengeluaran',
@@ -1712,8 +1742,13 @@ class _KeuanganPageState extends State<KeuanganPage> {
         }
 
         // Calculate and print total for verification
-        double totalPengeluaran = exportData.fold(0, (sum, item) => sum + (item['nominal'] as double));
-        print('💰 Total Pengeluaran untuk Export: Rp ${currencyFormat.format(totalPengeluaran)}');
+        double totalPengeluaran = exportData.fold(
+          0,
+          (sum, item) => sum + (item['nominal'] as double),
+        );
+        print(
+          '💰 Total Pengeluaran untuk Export: Rp ${currencyFormat.format(totalPengeluaran)}',
+        );
       }
 
       // Show export dialog with real data
@@ -1779,10 +1814,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFE8EAF2),
-          width: 1.5,
-        ),
+        border: Border.all(color: const Color(0xFFE8EAF2), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
@@ -1819,11 +1851,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
                         ),
                       ],
                     ),
-                    child: Icon(
-                      iconData,
-                      color: iconColor,
-                      size: 24,
-                    ),
+                    child: Icon(iconData, color: iconColor, size: 24),
                   ),
                   const SizedBox(width: 12),
                   // Info
@@ -1961,10 +1989,7 @@ class _KeuanganPageState extends State<KeuanganPage> {
             ),
           ),
         ),
-        const Text(
-          ': ',
-          style: TextStyle(color: Color(0xFF6B7280)),
-        ),
+        const Text(': ', style: TextStyle(color: Color(0xFF6B7280))),
         Expanded(
           child: Text(
             value,

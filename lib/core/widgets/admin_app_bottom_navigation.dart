@@ -1,32 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import 'package:jawara/features/admin/dashboard/dashboard_page.dart';
-import 'package:jawara/features/admin/data_warga/data_warga_main_page.dart';
-import 'package:jawara/features/admin/keuangan/keuangan_page.dart';
-import 'package:jawara/features/admin/kelola_lapak/kelola_lapak_page.dart';
 
 /// Unified Bottom Navigation Bar untuk semua halaman
 /// Menggunakan desain modern dengan gradient pada active state
-class AppBottomNavigation extends StatelessWidget {
-  const AppBottomNavigation({
-    super.key,
-    required this.currentIndex,
-  });
+class AppBottomNavigation extends StatefulWidget {
+  final StatefulNavigationShell navigationShell;
+  const AppBottomNavigation({super.key, required this.navigationShell});
 
-  final int currentIndex;
+  @override
+  State<AppBottomNavigation> createState() => _AppBottomNavigationState();
+}
+
+class _AppBottomNavigationState extends State<AppBottomNavigation>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
+  bool _isAnimating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+      reverseDuration: const Duration(milliseconds: 100),
+    );
+    _fade = CurvedAnimation(
+      parent: ReverseAnimation(_controller),
+      curve: Curves.easeOutSine,
+      reverseCurve: Curves.easeInSine,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      body: FadeTransition(opacity: _fade, child: widget.navigationShell),
+      bottomNavigationBar: _buildBottomNavigationBar(context),
+    );
+  }
+
+  Container _buildBottomNavigationBar(BuildContext context) {
+    final int currentIndex = widget.navigationShell.currentIndex;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         border: const Border(
-          top: BorderSide(
-            color: Color(0xFFE8EAF2),
-            width: 1,
-          ),
+          top: BorderSide(color: Color(0xFFE8EAF2), width: 1),
         ),
         boxShadow: [
           BoxShadow(
@@ -48,16 +70,7 @@ class AppBottomNavigation extends StatelessWidget {
                   icon: Icons.home_filled,
                   label: 'Home',
                   isActive: currentIndex == 0,
-                  onTap: () {
-                    if (currentIndex != 0) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => const DashboardPage(),
-                        ),
-                        (route) => false,
-                      );
-                    }
-                  },
+                  onTap: () => _goTo(0),
                 ),
               ),
               Expanded(
@@ -65,16 +78,7 @@ class AppBottomNavigation extends StatelessWidget {
                   icon: Icons.assignment_outlined,
                   label: 'Data Warga',
                   isActive: currentIndex == 1,
-                  onTap: () {
-                    if (currentIndex != 1) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => const DataWargaMainPage(),
-                        ),
-                        (route) => false,
-                      );
-                    }
-                  },
+                  onTap: () => _goTo(1),
                 ),
               ),
               Expanded(
@@ -82,16 +86,7 @@ class AppBottomNavigation extends StatelessWidget {
                   icon: Icons.account_balance_wallet_outlined,
                   label: 'Keuangan',
                   isActive: currentIndex == 2,
-                  onTap: () {
-                    if (currentIndex != 2) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => const KeuanganPage(),
-                        ),
-                        (route) => false,
-                      );
-                    }
-                  },
+                  onTap: () => _goTo(2),
                 ),
               ),
               Expanded(
@@ -99,16 +94,7 @@ class AppBottomNavigation extends StatelessWidget {
                   icon: Icons.store_rounded,
                   label: 'Kelola Lapak',
                   isActive: currentIndex == 3,
-                  onTap: () {
-                    if (currentIndex != 3) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => const KelolaLapakPage(),
-                        ),
-                        (route) => false,
-                      );
-                    }
-                  },
+                  onTap: () => _goTo(3),
                 ),
               ),
             ],
@@ -116,6 +102,35 @@ class AppBottomNavigation extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _goTo(int index) async {
+    // Reset the current branch if tapping the active tab.
+    final isReselect = index == widget.navigationShell.currentIndex;
+    if (_isAnimating && !isReselect) return; // avoid overlapping animations
+
+    if (isReselect) {
+      widget.navigationShell.goBranch(index, initialLocation: true);
+      return;
+    }
+
+    try {
+      _isAnimating = true;
+      // Fade out current content
+      await _controller.forward();
+      if (!mounted) return;
+
+      // Switch branch while content is invisible
+      widget.navigationShell.goBranch(index, initialLocation: true);
+
+      // Give a frame for the new content to layout before fade-in
+      await Future.delayed(const Duration(milliseconds: 16));
+    } finally {
+      if (mounted) {
+        await _controller.reverse(); // Fade in new content
+      }
+      _isAnimating = false;
+    }
   }
 }
 
@@ -141,17 +156,14 @@ class _BottomNavItem extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(18),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+        duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           gradient: isActive
               ? const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF2F80ED),
-                    Color(0xFF1E6FD9),
-                  ],
+                  colors: [Color(0xFF2F80ED), Color(0xFF1E6FD9)],
                 )
               : null,
           borderRadius: BorderRadius.circular(18),
@@ -168,11 +180,7 @@ class _BottomNavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: isActive ? Colors.white : inactive,
-              size: 24,
-            ),
+            Icon(icon, color: isActive ? Colors.white : inactive, size: 24),
             const SizedBox(height: 4),
             Text(
               label,
@@ -193,4 +201,3 @@ class _BottomNavItem extends StatelessWidget {
     );
   }
 }
-

@@ -6,7 +6,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:jawara/core/widgets/app_bottom_navigation.dart';
 
 class KelolaLapakPage extends StatelessWidget {
   const KelolaLapakPage({super.key});
@@ -80,10 +79,7 @@ class KelolaLapakPage extends StatelessWidget {
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [
-                                Color(0xFF2F80ED),
-                                Color(0xFF1E6FD9),
-                              ],
+                              colors: [Color(0xFF2F80ED), Color(0xFF1E6FD9)],
                             ),
                             shape: BoxShape.circle,
                           ),
@@ -248,7 +244,6 @@ class KelolaLapakPage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: const AppBottomNavigation(currentIndex: 3),
     );
   }
 
@@ -286,4 +281,3 @@ class KelolaLapakPage extends StatelessWidget {
     );
   }
 }
-

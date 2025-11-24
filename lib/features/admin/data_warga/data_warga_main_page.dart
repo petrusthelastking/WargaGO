@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:jawara/core/widgets/app_bottom_navigation.dart';
+import 'package:jawara/core/widgets/admin_app_bottom_navigation.dart';
 import 'package:jawara/core/providers/warga_provider.dart';
 import 'package:jawara/core/providers/keluarga_provider.dart';
 import 'package:jawara/core/providers/rumah_provider.dart';
@@ -18,10 +18,7 @@ import 'package:jawara/features/admin/core_pages/kyc_verification_page.dart';
 class DataWargaMainPage extends StatefulWidget {
   final int initialIndex;
 
-  const DataWargaMainPage({
-    super.key,
-    this.initialIndex = 0,
-  });
+  const DataWargaMainPage({super.key, this.initialIndex = 0});
 
   @override
   State<DataWargaMainPage> createState() => _DataWargaMainPageState();
@@ -65,15 +62,13 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
       ),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.2, 0.7, curve: Curves.easeOutCubic),
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.7, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _animationController.forward();
 
@@ -123,10 +118,7 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFF5F7FA),
-                  Color(0xFFFFFFFF),
-                ],
+                colors: [Color(0xFFF5F7FA), Color(0xFFFFFFFF)],
               ),
             ),
             child: Column(
@@ -158,15 +150,20 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
                                       Color(0xFF2F80ED),
                                       Color(0xFF1E6FD9),
                                     ],
-                                    total: wargaProvider.isLoading ? '...' : totalWarga.toString(),
+                                    total: wargaProvider.isLoading
+                                        ? '...'
+                                        : totalWarga.toString(),
                                     label: 'Total Warga',
-                                    trend: wargaProvider.isLoading ? '...' : 'Aktif: ${wargaProvider.totalAktif}',
+                                    trend: wargaProvider.isLoading
+                                        ? '...'
+                                        : 'Aktif: ${wargaProvider.totalAktif}',
                                     trendUp: true,
                                     delay: 0,
                                     onTap: () => Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => const DataWargaPage(),
+                                        builder: (context) =>
+                                            const DataWargaPage(),
                                       ),
                                     ),
                                   ),
@@ -177,27 +174,33 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
                                   child: StreamBuilder<List<dynamic>>(
                                     stream: _mutasiRepo.getAllMutasi(),
                                     builder: (context, snapshot) {
-                                      final totalMutasi = snapshot.hasData ? snapshot.data!.length : 0;
+                                      final totalMutasi = snapshot.hasData
+                                          ? snapshot.data!.length
+                                          : 0;
                                       final totalStr = totalMutasi.toString();
 
                                       return _buildHorizontalCard(
                                         context,
                                         title: 'Data Mutasi',
                                         subtitle: 'Riwayat perpindahan',
-                                        icon: Icons.swap_horizontal_circle_rounded,
+                                        icon: Icons
+                                            .swap_horizontal_circle_rounded,
                                         gradientColors: const [
                                           Color(0xFF3B8FFF),
                                           Color(0xFF2F80ED),
                                         ],
                                         total: totalStr,
                                         label: 'Total Mutasi',
-                                        trend: totalMutasi > 0 ? '+${totalMutasi}' : '-',
+                                        trend: totalMutasi > 0
+                                            ? '+${totalMutasi}'
+                                            : '-',
                                         trendUp: true,
                                         delay: 100,
                                         onTap: () => Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => const DataMutasiWargaPage(),
+                                            builder: (context) =>
+                                                const DataMutasiWargaPage(),
                                           ),
                                         ),
                                       );
@@ -221,7 +224,8 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
                                       Color(0xFF1E6FD9),
                                       Color(0xFF0F5FCC),
                                     ],
-                                    total: totalWarga.toString(), // Same as warga for now
+                                    total: totalWarga
+                                        .toString(), // Same as warga for now
                                     label: 'Total User',
                                     trend: '-',
                                     trendUp: true,
@@ -229,7 +233,8 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
                                     onTap: () => Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => const KelolaPenggunaPage(),
+                                        builder: (context) =>
+                                            const KelolaPenggunaPage(),
                                       ),
                                     ),
                                   ),
@@ -240,7 +245,9 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
                                   child: StreamBuilder<List<dynamic>>(
                                     stream: _pendingRepo.getAllPendingWarga(),
                                     builder: (context, snapshot) {
-                                      final totalPending = snapshot.hasData ? snapshot.data!.length : 0;
+                                      final totalPending = snapshot.hasData
+                                          ? snapshot.data!.length
+                                          : 0;
                                       final totalStr = totalPending.toString();
 
                                       return _buildHorizontalCard(
@@ -260,7 +267,8 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
                                         onTap: () => Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => const TerimaWargaPage(),
+                                            builder: (context) =>
+                                                const TerimaWargaPage(),
                                           ),
                                         ),
                                       );
@@ -281,7 +289,9 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
                                         .where('status', isEqualTo: 'pending')
                                         .snapshots(),
                                     builder: (context, snapshot) {
-                                      final pendingKYC = snapshot.hasData ? snapshot.data!.docs.length : 0;
+                                      final pendingKYC = snapshot.hasData
+                                          ? snapshot.data!.docs.length
+                                          : 0;
 
                                       return _buildHorizontalCard(
                                         context,
@@ -294,13 +304,16 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
                                         ],
                                         total: pendingKYC.toString(),
                                         label: 'Pending KYC',
-                                        trend: pendingKYC > 0 ? '${pendingKYC} Baru' : 'Semua OK',
+                                        trend: pendingKYC > 0
+                                            ? '${pendingKYC} Baru'
+                                            : 'Semua OK',
                                         trendUp: pendingKYC == 0,
                                         delay: 400,
                                         onTap: () => Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => const KYCVerificationPage(),
+                                            builder: (context) =>
+                                                const KYCVerificationPage(),
                                           ),
                                         ),
                                       );
@@ -309,9 +322,7 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
                                 ),
                                 const SizedBox(width: 16),
                                 // Placeholder card atau card lain bisa ditambahkan di sini
-                                Expanded(
-                                  child: Container(),
-                                ),
+                                Expanded(child: Container()),
                               ],
                             ),
                             const SizedBox(height: 32),
@@ -332,7 +343,6 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
               ],
             ),
           ),
-          bottomNavigationBar: const AppBottomNavigation(currentIndex: 1),
         );
       },
     );
@@ -355,8 +365,11 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color.lerp(const Color(0xFF2F80ED), const Color(0xFF3B8FFF),
-                    _pulseController.value * 0.2)!,
+                Color.lerp(
+                  const Color(0xFF2F80ED),
+                  const Color(0xFF3B8FFF),
+                  _pulseController.value * 0.2,
+                )!,
                 const Color(0xFF1E6FD9),
                 const Color(0xFF0F5FCC),
               ],
@@ -413,7 +426,9 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0x33FFFFFF), // white with 0.2 opacity
+                          color: const Color(
+                            0x33FFFFFF,
+                          ), // white with 0.2 opacity
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -458,10 +473,7 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
         final clampedValue = value.clamp(0.0, 1.0);
         return Transform.translate(
           offset: Offset(50 * (1 - clampedValue), 0),
-          child: Opacity(
-            opacity: clampedValue,
-            child: child,
-          ),
+          child: Opacity(opacity: clampedValue, child: child),
         );
       },
       child: _HorizontalCardWidget(
@@ -493,10 +505,7 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
         final clampedValue = value.clamp(0.0, 1.0);
         return Transform.translate(
           offset: Offset(0, 30 * (1 - clampedValue)),
-          child: Opacity(
-            opacity: clampedValue,
-            child: child,
-          ),
+          child: Opacity(opacity: clampedValue, child: child),
         );
       },
       child: Container(
@@ -504,10 +513,7 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: const Color(0xFFE5E7EB),
-            width: 1.5,
-          ),
+          border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
           boxShadow: [
             BoxShadow(
               color: const Color(0x0F000000), // black with 0.06 opacity
@@ -626,10 +632,7 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: borderColor,
-          width: 1.5,
-        ),
+        border: Border.all(color: borderColor, width: 1.5),
       ),
       child: Column(
         children: [
@@ -698,10 +701,7 @@ class _HorizontalCardWidget extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: borderColor,
-              width: 1.5,
-            ),
+            border: Border.all(color: borderColor, width: 1.5),
             boxShadow: [
               BoxShadow(
                 color: shadowColor,
@@ -768,7 +768,8 @@ class _HorizontalCardWidget extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const SizedBox(height: 2),
                                       // Title
@@ -782,7 +783,9 @@ class _HorizontalCardWidget extends StatelessWidget {
                                           height: 1.2,
                                           shadows: const [
                                             Shadow(
-                                              color: Color(0x33000000), // black with 0.2 opacity
+                                              color: Color(
+                                                0x33000000,
+                                              ), // black with 0.2 opacity
                                               offset: Offset(0, 1),
                                               blurRadius: 3,
                                             ),
@@ -799,10 +802,14 @@ class _HorizontalCardWidget extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: const Color(0x40FFFFFF), // white with 0.25 opacity
+                                    color: const Color(
+                                      0x40FFFFFF,
+                                    ), // white with 0.25 opacity
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: const Color(0x66FFFFFF), // white with 0.4 opacity
+                                      color: const Color(
+                                        0x66FFFFFF,
+                                      ), // white with 0.4 opacity
                                       width: 1.5,
                                     ),
                                   ),
@@ -823,7 +830,8 @@ class _HorizontalCardWidget extends StatelessWidget {
                                 Flexible(
                                   flex: 3,
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       FittedBox(
                                         fit: BoxFit.scaleDown,
@@ -837,7 +845,9 @@ class _HorizontalCardWidget extends StatelessWidget {
                                             height: 1,
                                             shadows: const [
                                               Shadow(
-                                                color: Color(0x33000000), // black with 0.2 opacity
+                                                color: Color(
+                                                  0x33000000,
+                                                ), // black with 0.2 opacity
                                                 offset: Offset(0, 2),
                                                 blurRadius: 4,
                                               ),
@@ -851,7 +861,9 @@ class _HorizontalCardWidget extends StatelessWidget {
                                         style: GoogleFonts.poppins(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
-                                          color: const Color(0xE6FFFFFF), // white with 0.9 opacity
+                                          color: const Color(
+                                            0xE6FFFFFF,
+                                          ), // white with 0.9 opacity
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -869,10 +881,14 @@ class _HorizontalCardWidget extends StatelessWidget {
                                       vertical: 6,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0x40FFFFFF), // white with 0.25 opacity
+                                      color: const Color(
+                                        0x40FFFFFF,
+                                      ), // white with 0.25 opacity
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                        color: const Color(0x4DFFFFFF), // white with 0.3 opacity
+                                        color: const Color(
+                                          0x4DFFFFFF,
+                                        ), // white with 0.3 opacity
                                         width: 1,
                                       ),
                                     ),
@@ -918,4 +934,3 @@ class _HorizontalCardWidget extends StatelessWidget {
     );
   }
 }
-

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemUiOverlayStyle, SystemChrome;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:jawara/core/constants/app_routes.dart';
 
 const Color _kAccent = Color(0xFF2F80ED);
@@ -143,10 +144,9 @@ class _PreAuthPageState extends State<PreAuthPage>
                             ),
                           ),
                           onPressed: () {
-                            Navigator.pushNamed(
-                              context,
+                            context.push(
                               AppRoutes.login,
-                              arguments: {
+                              extra: {
                                 'initialProgress': _controller.value,
                                 'isForward': _isForward,
                               },
@@ -171,10 +171,7 @@ class _PreAuthPageState extends State<PreAuthPage>
                             ),
                           ),
                           onPressed: () {
-                            Navigator.pushNamed(
-                              context,
-                              AppRoutes.wargaRegister,
-                            );
+                            context.push(AppRoutes.wargaRegister);
                           },
                           child: const Text('Sign Up'),
                         ),
