@@ -8,9 +8,7 @@ import 'package:jawara/core/services/firestore_service.dart';
 class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email'],
-    // Web Client ID dari Firebase Console untuk Google Sign In
-    serverClientId: '693556950050-vp8tf6ib0a5vfsqik0m3lm46o1f0786o.apps.googleusercontent.com',
+    scopes: ['email', 'profile'],
   );
   final FirestoreService _firestoreService = FirestoreService();
 
@@ -483,14 +481,21 @@ class AuthProvider with ChangeNotifier {
         print('==================\n');
       }
 
-      // Handling error code 10 (API_NOT_AVAILABLE)
-      if (e.code == 'sign_in_failed') {
-        _errorMessage = 'Google Sign In tidak tersedia. Pastikan:\n'
-            '1. Google Play Services terinstall\n'
-            '2. SHA-1 certificate sudah ditambahkan ke Firebase\n'
-            '3. Koneksi internet aktif';
+      // Handling different error codes
+      if (e.code == 'sign_in_failed' || e.code == '10') {
+        _errorMessage = 'Google Sign In tidak tersedia.\n\n'
+            'Kemungkinan penyebab:\n'
+            '• Google Play Services belum terinstall/update\n'
+            '• Menggunakan emulator tanpa Google Play\n'
+            '• Koneksi internet tidak stabil\n\n'
+            'Solusi:\n'
+            '1. Gunakan device fisik atau emulator dengan Google Play\n'
+            '2. Update Google Play Services\n'
+            '3. Periksa koneksi internet';
       } else if (e.code == 'network_error') {
-        _errorMessage = 'Gagal terhubung ke Google. Periksa koneksi internet Anda.';
+        _errorMessage = 'Gagal terhubung ke Google.\nPeriksa koneksi internet Anda.';
+      } else if (e.code == 'sign_in_canceled') {
+        _errorMessage = null; // User cancelled, no error message needed
       } else {
         _errorMessage = 'Google Sign In gagal: ${e.message ?? e.code}';
       }
