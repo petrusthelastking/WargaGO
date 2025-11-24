@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:jawara/core/widgets/app_bottom_navigation.dart';
+import 'package:jawara/core/widgets/admin_app_bottom_navigation.dart';
 import 'tambah_data_warga_page.dart';
 import 'tambah_data_rumah_page.dart';
 import 'debug_keluarga_page.dart';
@@ -63,7 +63,6 @@ class _DataWargaPageState extends State<DataWargaPage>
         ],
       ),
       floatingActionButton: _buildFAB(),
-      bottomNavigationBar: const AppBottomNavigation(currentIndex: 1),
     );
   }
 
@@ -106,9 +105,7 @@ class _DataWargaPageState extends State<DataWargaPage>
     // Hide FAB on Keluarga tab (index 1)
     if (_tabController.index == 1) return null;
 
-    return CustomGradientFAB(
-      onPressed: () => _handleFABPressed(),
-    );
+    return CustomGradientFAB(onPressed: () => _handleFABPressed());
   }
 
   void _handleFABPressed() {

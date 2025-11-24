@@ -8,14 +8,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:jawara/core/constants/app_routes.dart';
 import 'package:jawara/core/models/kyc_document_model.dart';
 import 'package:jawara/core/providers/auth_provider.dart';
 import 'package:jawara/core/services/kyc_service.dart';
 import 'package:jawara/features/common/auth/presentation/widgets/auth_constants.dart';
 import 'package:jawara/features/common/auth/presentation/widgets/auth_widgets.dart';
-import 'package:jawara/features/warga/warga_main_page.dart';
 
 class KYCUploadPage extends StatefulWidget {
   const KYCUploadPage({super.key});
@@ -50,11 +51,7 @@ class _KYCUploadPageState extends State<KYCUploadPage> {
       return null;
     } catch (e) {
       if (mounted) {
-        AuthDialogs.showError(
-          context,
-          'Error',
-          'Gagal memilih gambar: $e',
-        );
+        AuthDialogs.showError(context, 'Error', 'Gagal memilih gambar: $e');
       }
       return null;
     }
@@ -143,11 +140,8 @@ class _KYCUploadPageState extends State<KYCUploadPage> {
         'Dokumen Anda berhasil diupload. Admin akan memverifikasi dokumen Anda dalam 1-3 hari kerja.',
         buttonText: 'Lanjutkan',
         onPressed: () {
-          Navigator.pop(context); // Close dialog
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const WargaMainPage()),
-          );
+          context.pop(); // Close dialog
+          context.go(AppRoutes.pending);
         },
       );
     } catch (e) {
@@ -167,10 +161,7 @@ class _KYCUploadPageState extends State<KYCUploadPage> {
 
   /// Skip KYC for now
   void _skipKYC() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const WargaMainPage()),
-    );
+    context.go(AppRoutes.wargaDashboard);
   }
 
   @override
@@ -274,11 +265,7 @@ class _KYCUploadPageState extends State<KYCUploadPage> {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            color: Colors.blue.shade700,
-            size: 24,
-          ),
+          Icon(Icons.info_outline, color: Colors.blue.shade700, size: 24),
           const SizedBox(width: AuthSpacing.md),
           Expanded(
             child: Text(
@@ -413,4 +400,3 @@ class _KYCUploadPageState extends State<KYCUploadPage> {
     );
   }
 }
-

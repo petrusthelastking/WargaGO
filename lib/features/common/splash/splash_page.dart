@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:jawara/core/constants/app_routes.dart';
 
 const _wordmarkText = 'Jawara';
@@ -208,7 +209,7 @@ class _SplashPageState extends State<SplashPage>
 
     c.addStatusListener((s) {
       if (s == AnimationStatus.completed && mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
+        context.go(AppRoutes.onboarding);
       }
     });
 

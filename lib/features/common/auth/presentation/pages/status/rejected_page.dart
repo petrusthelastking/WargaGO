@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:jawara/core/constants/app_routes.dart';
 
 /// Halaman yang ditampilkan saat akun warga ditolak oleh admin
 class RejectedPage extends StatelessWidget {
-  const RejectedPage({
-    super.key,
-    this.reason,
-  });
+  const RejectedPage({super.key, this.reason});
 
   final String? reason;
 
@@ -131,11 +129,7 @@ class RejectedPage extends StatelessWidget {
                     // Logout dan kembali ke registrasi
                     await FirebaseAuth.instance.signOut();
                     if (context.mounted) {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        AppRoutes.wargaRegister,
-                        (route) => false,
-                      );
+                      context.go(AppRoutes.wargaRegister);
                     }
                   },
                   child: const Text('Daftar Ulang'),
@@ -162,11 +156,7 @@ class RejectedPage extends StatelessWidget {
                   onPressed: () async {
                     await FirebaseAuth.instance.signOut();
                     if (context.mounted) {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        AppRoutes.preAuth,
-                        (route) => false,
-                      );
+                      context.go(AppRoutes.login);
                     }
                   },
                   child: const Text('Kembali'),
@@ -179,4 +169,3 @@ class RejectedPage extends StatelessWidget {
     );
   }
 }
-

@@ -11,12 +11,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:jawara/core/constants/app_routes.dart';
 import 'package:jawara/core/providers/auth_provider.dart';
 import 'package:jawara/features/common/auth/presentation/widgets/auth_constants.dart';
 import 'package:jawara/features/common/auth/presentation/widgets/auth_widgets.dart';
-import 'package:jawara/features/common/auth/presentation/pages/warga/kyc_upload_page.dart';
-import 'package:jawara/features/warga/warga_main_page.dart';
 
 class WargaRegisterPage extends StatefulWidget {
   const WargaRegisterPage({super.key});
@@ -59,22 +59,17 @@ class _WargaRegisterPageState extends State<WargaRegisterPage> {
       // Navigate based on user status
       if (authProvider.userModel?.status == 'unverified') {
         // New user - redirect to KYC upload
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const KYCUploadPage()),
-        );
+        context.go(AppRoutes.wargaKYC);
       } else {
         // Existing verified user - redirect to dashboard
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const WargaMainPage()),
-        );
+        context.go(AppRoutes.wargaDashboard);
       }
     } else {
       AuthDialogs.showError(
         context,
         'Login Gagal',
-        authProvider.errorMessage ?? 'Terjadi kesalahan saat login dengan Google',
+        authProvider.errorMessage ??
+            'Terjadi kesalahan saat login dengan Google',
       );
     }
   }
@@ -117,10 +112,7 @@ class _WargaRegisterPageState extends State<WargaRegisterPage> {
         buttonText: 'Lanjutkan',
         onPressed: () {
           Navigator.pop(context); // Close dialog
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const KYCUploadPage()),
-          );
+          context.go(AppRoutes.wargaKYC);
         },
       );
     } else {
@@ -223,11 +215,8 @@ class _WargaRegisterPageState extends State<WargaRegisterPage> {
               'assets/icons/google_logo.png',
               height: 24,
               width: 24,
-              errorBuilder: (_, __, ___) => const Icon(
-                Icons.g_mobiledata,
-                size: 28,
-                color: Colors.blue,
-              ),
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.g_mobiledata, size: 28, color: Colors.blue),
             ),
             const SizedBox(width: AuthSpacing.md),
             Text(
@@ -298,7 +287,9 @@ class _WargaRegisterPageState extends State<WargaRegisterPage> {
               if (value == null || value.isEmpty) {
                 return 'Email harus diisi';
               }
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+              if (!RegExp(
+                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value)) {
                 return 'Format email tidak valid';
               }
               return null;
@@ -343,11 +334,15 @@ class _WargaRegisterPageState extends State<WargaRegisterPage> {
             obscureText: _obscureConfirmPassword,
             suffixIcon: IconButton(
               icon: Icon(
-                _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                _obscureConfirmPassword
+                    ? Icons.visibility_off
+                    : Icons.visibility,
                 color: AuthColors.textTertiary,
               ),
               onPressed: () {
-                setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                setState(
+                  () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                );
               },
             ),
             validator: (value) {
@@ -399,4 +394,3 @@ class _WargaRegisterPageState extends State<WargaRegisterPage> {
     );
   }
 }
-

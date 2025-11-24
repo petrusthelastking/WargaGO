@@ -10,18 +10,14 @@ class AppRoutes {
   /// Route onboarding (pengenalan app)
   static const String onboarding = '/onboarding';
 
-  /// Route pre-auth (DEPRECATED - tidak digunakan lagi)
-  @Deprecated('Use login instead')
+  /// Route pre-auth
   static const String preAuth = '/pre-auth';
 
   // ========== AUTH ROUTES (UNIFIED) ==========
   /// Route login unified untuk Admin & Warga
   static const String login = '/login';
 
-  // ========== ADMIN ROUTES ==========
-  /// Route login admin (DEPRECATED - gunakan /login)
-  // @Deprecated('Use login instead')
-  // static const String adminLogin = '/admin/login';
+  static const String forgotPassword = '/login/forgot';
 
   /// Route dashboard admin
   static const String adminDashboard = '/admin/dashboard';
@@ -32,10 +28,6 @@ class AppRoutes {
   // ========== WARGA ROUTES ==========
   /// Route registrasi warga baru
   static const String wargaRegister = '/warga/register';
-
-  /// Route login warga (DEPRECATED - gunakan /login)
-  // @Deprecated('Use login instead')
-  // static const String wargaLogin = '/warga/login';
 
   /// Route upload KYC (KTP & Selfie)
   static const String wargaKYC = '/warga/kyc';

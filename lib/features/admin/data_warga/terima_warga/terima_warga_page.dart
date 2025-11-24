@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:jawara/core/widgets/app_bottom_navigation.dart';
+import 'package:jawara/core/widgets/admin_app_bottom_navigation.dart';
 import 'models/pending_warga_model.dart';
 import 'repositories/pending_warga_repository.dart';
 
@@ -91,16 +91,12 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
             Expanded(
               child: TabBarView(
                 controller: _tabController,
-                children: [
-                  _buildPendingList(),
-                  _buildHistoryList(),
-                ],
+                children: [_buildPendingList(), _buildHistoryList()],
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: const AppBottomNavigation(currentIndex: 1),
     );
   }
 
@@ -112,15 +108,9 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF2F80ED),
-            Color(0xFF1E6FD9),
-            Color(0xFF0F5FCC),
-          ],
+          colors: [Color(0xFF2F80ED), Color(0xFF1E6FD9), Color(0xFF0F5FCC)],
         ),
-        borderRadius: const BorderRadius.vertical(
-          bottom: Radius.circular(32),
-        ),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
@@ -217,7 +207,10 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
             color: Color(0xFF6B7280),
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
         ),
       ),
     );
@@ -258,7 +251,8 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
                 final namaLower = warga.name.toLowerCase();
                 final nikLower = warga.nik.toLowerCase();
                 final queryLower = _searchQuery.toLowerCase();
-                return namaLower.contains(queryLower) || nikLower.contains(queryLower);
+                return namaLower.contains(queryLower) ||
+                    nikLower.contains(queryLower);
               }).toList();
 
         if (filteredPending.isEmpty) {
@@ -353,7 +347,9 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
   }
 
   Widget _buildPendingCard(PendingWargaModel warga) {
-    final dateFormat = DateFormat('dd MMM yyyy, HH:mm'); // Remove locale to use default
+    final dateFormat = DateFormat(
+      'dd MMM yyyy, HH:mm',
+    ); // Remove locale to use default
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -375,7 +371,8 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => DetailTerimaWargaPage(pendingWarga: warga),
+                builder: (context) =>
+                    DetailTerimaWargaPage(pendingWarga: warga),
               ),
             ).then((_) => setState(() {})); // Refresh after approve/reject
           },
@@ -396,7 +393,9 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        warga.jenisKelamin == 'Laki-laki' ? Icons.male : Icons.female,
+                        warga.jenisKelamin == 'Laki-laki'
+                            ? Icons.male
+                            : Icons.female,
                         color: Colors.white,
                         size: 24,
                       ),
@@ -417,7 +416,11 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Icon(Icons.badge_outlined, size: 14, color: Colors.grey[400]),
+                              Icon(
+                                Icons.badge_outlined,
+                                size: 14,
+                                color: Colors.grey[400],
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 warga.nik,
@@ -432,7 +435,10 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFEF3C7),
                         borderRadius: BorderRadius.circular(8),
@@ -456,14 +462,20 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
                     Icon(Icons.access_time, size: 14, color: Colors.grey[400]),
                     const SizedBox(width: 4),
                     Text(
-                      warga.createdAt != null ? dateFormat.format(warga.createdAt!) : '-',
+                      warga.createdAt != null
+                          ? dateFormat.format(warga.createdAt!)
+                          : '-',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         color: Colors.grey[600],
                       ),
                     ),
                     const Spacer(),
-                    Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                      color: Colors.grey[400],
+                    ),
                   ],
                 ),
               ],
@@ -476,7 +488,9 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
 
   Widget _buildHistoryCard(PendingWargaModel warga) {
     final isApproved = warga.status == 'approved';
-    final dateFormat = DateFormat('dd MMM yyyy, HH:mm'); // Remove locale to use default
+    final dateFormat = DateFormat(
+      'dd MMM yyyy, HH:mm',
+    ); // Remove locale to use default
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -522,7 +536,10 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: isApproved
                         ? const Color(0xFFD1FAE5)
@@ -544,11 +561,10 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
             ),
             const SizedBox(height: 8),
             Text(
-              warga.approvedAt != null ? dateFormat.format(warga.approvedAt!) : '-',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: Colors.grey[500],
-              ),
+              warga.approvedAt != null
+                  ? dateFormat.format(warga.approvedAt!)
+                  : '-',
+              style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[500]),
             ),
           ],
         ),
@@ -556,4 +572,3 @@ class _TerimaWargaPageState extends State<TerimaWargaPage>
     );
   }
 }
-

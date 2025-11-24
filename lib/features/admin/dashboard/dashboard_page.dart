@@ -20,7 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
-import 'package:jawara/core/widgets/app_bottom_navigation.dart';
+import 'package:jawara/core/widgets/admin_app_bottom_navigation.dart';
 import 'dashboard_detail_page.dart';
 import 'activity_detail_page.dart';
 import 'penanggung_jawab_detail_page.dart';
@@ -44,38 +44,32 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: DashboardColors.background,
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // Header section dengan gradient background
-            _buildHeader(),
+    return SafeArea(
+      child: CustomScrollView(
+        slivers: [
+          // Header section dengan gradient background
+          _buildHeader(),
 
-            // Content sections
-            SliverPadding(
-              padding: DashboardStyles.contentPadding,
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  const _ActivitySection(),
-                  const SizedBox(height: 20),
-                  const _TimelineCard(),
-                  const SizedBox(height: 20),
-                  const _CategoryPerformanceCard(),
-                  const SizedBox(height: 20),
-                  const _MonthlyActivityCard(),
-                  const SizedBox(height: 20),
-                  const _LogAktivitasCard(),
-                  const SizedBox(height: 24),
-                  const _PrimaryActionButton(),
-                ]),
-              ),
+          // Content sections
+          SliverPadding(
+            padding: DashboardStyles.contentPadding,
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const _ActivitySection(),
+                const SizedBox(height: 20),
+                const _TimelineCard(),
+                const SizedBox(height: 20),
+                const _CategoryPerformanceCard(),
+                const SizedBox(height: 20),
+                const _MonthlyActivityCard(),
+                const SizedBox(height: 20),
+                const _LogAktivitasCard(),
+                const SizedBox(height: 24),
+                const _PrimaryActionButton(),
+              ]),
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: const AppBottomNavigation(
-        currentIndex: 0,
+          ),
+        ],
       ),
     );
   }
@@ -227,11 +221,7 @@ class _DashboardHeader extends StatelessWidget {
             iconColor: Colors.white,
             isNarrow: isNarrow,
           ),
-          const Positioned(
-            right: 2,
-            top: 2,
-            child: _NotificationDot(),
-          ),
+          const Positioned(right: 2, top: 2, child: _NotificationDot()),
         ],
       ),
     );
@@ -311,9 +301,7 @@ class _HeaderIcon extends StatelessWidget {
   }
 
   Color _getShadowColor() {
-    return backgroundColor != null
-        ? Colors.black
-        : DashboardColors.primaryBlue;
+    return backgroundColor != null ? Colors.black : DashboardColors.primaryBlue;
   }
 }
 
@@ -434,10 +422,7 @@ class _FinanceCard extends StatelessWidget {
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          backgroundColor,
-          backgroundColor.withValues(alpha: 0.6),
-        ],
+        colors: [backgroundColor, backgroundColor.withValues(alpha: 0.6)],
       ),
       borderRadius: DashboardStyles.cardRadius,
       border: Border.all(
@@ -463,11 +448,7 @@ class _FinanceCard extends StatelessWidget {
         borderRadius: DashboardStyles.smallCardRadius,
         boxShadow: DashboardStyles.iconShadow(DashboardColors.primaryBlue),
       ),
-      child: Icon(
-        icon,
-        color: DashboardColors.primaryBlue,
-        size: 26,
-      ),
+      child: Icon(icon, color: DashboardColors.primaryBlue, size: 26),
     );
   }
 
@@ -572,16 +553,10 @@ class _FinanceWideCard extends StatelessWidget {
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          DashboardColors.incomeBackground,
-          Color(0xFFE8F0FF),
-        ],
+        colors: [DashboardColors.incomeBackground, Color(0xFFE8F0FF)],
       ),
       borderRadius: DashboardStyles.cardRadius,
-      border: Border.all(
-        color: Colors.white.withValues(alpha: 0.6),
-        width: 2,
-      ),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 2),
       boxShadow: [
         BoxShadow(
           color: DashboardColors.primaryBlue.withValues(alpha: 0.12),
@@ -612,11 +587,7 @@ class _FinanceWideCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Icon(
-        icon,
-        color: Colors.white,
-        size: 32,
-      ),
+      child: Icon(icon, color: Colors.white, size: 32),
     );
   }
 
@@ -703,10 +674,7 @@ class _ActivitySection extends StatelessWidget {
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF2F80ED),
-                    Color(0xFF1E6FD9),
-                  ],
+                  colors: [Color(0xFF2F80ED), Color(0xFF1E6FD9)],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
@@ -799,10 +767,7 @@ class _ActivityListTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: const Color(0xFFE8EAF2),
-            width: 1.5,
-          ),
+          border: Border.all(color: const Color(0xFFE8EAF2), width: 1.5),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF2F80ED).withValues(alpha: 0.08),
@@ -852,10 +817,7 @@ class _ActivityListTile extends StatelessWidget {
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFDDEAFF),
-                    Color(0xFFE8F0FF),
-                  ],
+                  colors: [Color(0xFFDDEAFF), Color(0xFFE8F0FF)],
                 ),
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
@@ -906,10 +868,7 @@ class _TimelineCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: const Color(0xFFE8EAF2),
-          width: 1.5,
-        ),
+        border: Border.all(color: const Color(0xFFE8EAF2), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF2F80ED).withValues(alpha: 0.08),
@@ -929,10 +888,7 @@ class _TimelineCard extends StatelessWidget {
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF2F80ED),
-                      Color(0xFF1E6FD9),
-                    ],
+                    colors: [Color(0xFF2F80ED), Color(0xFF1E6FD9)],
                   ),
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
@@ -1024,11 +980,7 @@ class _TimelineProgressRow extends StatelessWidget {
                     color: highlight.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    icon,
-                    color: highlight,
-                    size: 18,
-                  ),
+                  child: Icon(icon, color: highlight, size: 18),
                 ),
                 const SizedBox(width: 10),
                 AutoSizeText(
@@ -1074,10 +1026,7 @@ class _TimelineProgressRow extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
-                    colors: [
-                      highlight,
-                      highlight.withValues(alpha: 0.7),
-                    ],
+                    colors: [highlight, highlight.withValues(alpha: 0.7)],
                   ),
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
@@ -1111,10 +1060,7 @@ class _CategoryPerformanceCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            Color(0xFFFAFBFF),
-          ],
+          colors: [Colors.white, Color(0xFFFAFBFF)],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFE8EAF2), width: 1.5),
@@ -1173,7 +1119,10 @@ class _CategoryPerformanceCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE0E3EE), width: 1.5),
+                  border: Border.all(
+                    color: const Color(0xFFE0E3EE),
+                    width: 1.5,
+                  ),
                   color: const Color(0xFFFAFBFF),
                 ),
                 child: Row(
@@ -1392,10 +1341,10 @@ class _MonthlyActivityCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              SizedBox(height: isNarrow ? 20 : 32),  // Responsive spacing
+              SizedBox(height: isNarrow ? 20 : 32), // Responsive spacing
               // Y-axis labels and chart
               SizedBox(
-                height: isNarrow ? 180 : 220,  // Responsive height
+                height: isNarrow ? 180 : 220, // Responsive height
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1415,7 +1364,7 @@ class _MonthlyActivityCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    SizedBox(width: isNarrow ? 8 : 12),  // Responsive spacing
+                    SizedBox(width: isNarrow ? 8 : 12), // Responsive spacing
                     // Chart bars with Flexible to prevent overflow
                     Expanded(
                       child: SizedBox(
@@ -1425,7 +1374,8 @@ class _MonthlyActivityCard extends StatelessWidget {
                             // Grid lines
                             Positioned.fill(
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: List.generate(
                                   6,
                                   (index) => Container(
@@ -1438,23 +1388,47 @@ class _MonthlyActivityCard extends StatelessWidget {
                             // Bars with FittedBox to scale down if needed
                             Align(
                               alignment: Alignment.bottomCenter,
-                              child: FittedBox(  // ⭐ Scale down jika perlu
+                              child: FittedBox(
+                                // ⭐ Scale down jika perlu
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.bottomCenter,
                                 child: Row(
-                                  mainAxisSize: MainAxisSize.min,  // ⭐ KEY: min size to fit content
+                                  mainAxisSize: MainAxisSize
+                                      .min, // ⭐ KEY: min size to fit content
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    _ChartBar(height: 0, maxHeight: isNarrow ? 160 : 200, isNarrow: isNarrow),
-                                    SizedBox(width: isNarrow ? 6 : 8),  // Reduced spacing
-                                    _ChartBar(height: 0, maxHeight: isNarrow ? 160 : 200, isNarrow: isNarrow),
+                                    _ChartBar(
+                                      height: 0,
+                                      maxHeight: isNarrow ? 160 : 200,
+                                      isNarrow: isNarrow,
+                                    ),
+                                    SizedBox(
+                                      width: isNarrow ? 6 : 8,
+                                    ), // Reduced spacing
+                                    _ChartBar(
+                                      height: 0,
+                                      maxHeight: isNarrow ? 160 : 200,
+                                      isNarrow: isNarrow,
+                                    ),
                                     SizedBox(width: isNarrow ? 6 : 8),
-                                    _ChartBar(height: isNarrow ? 80 : 100, maxHeight: isNarrow ? 160 : 200, isNarrow: isNarrow),
+                                    _ChartBar(
+                                      height: isNarrow ? 80 : 100,
+                                      maxHeight: isNarrow ? 160 : 200,
+                                      isNarrow: isNarrow,
+                                    ),
                                     SizedBox(width: isNarrow ? 6 : 8),
-                                    _ChartBar(height: 0, maxHeight: isNarrow ? 160 : 200, isNarrow: isNarrow),
+                                    _ChartBar(
+                                      height: 0,
+                                      maxHeight: isNarrow ? 160 : 200,
+                                      isNarrow: isNarrow,
+                                    ),
                                     SizedBox(width: isNarrow ? 6 : 8),
-                                    _ChartBar(height: 0, maxHeight: isNarrow ? 160 : 200, isNarrow: isNarrow),
+                                    _ChartBar(
+                                      height: 0,
+                                      maxHeight: isNarrow ? 160 : 200,
+                                      isNarrow: isNarrow,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -1466,11 +1440,12 @@ class _MonthlyActivityCard extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(height: isNarrow ? 12 : 16),  // Responsive spacing
+              SizedBox(height: isNarrow ? 12 : 16), // Responsive spacing
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Flexible(  // ⭐ Wrap text dengan Flexible
+                  Flexible(
+                    // ⭐ Wrap text dengan Flexible
                     child: Text(
                       '12.07 - 25.07',
                       style: GoogleFonts.poppins(
@@ -1484,7 +1459,7 @@ class _MonthlyActivityCard extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: isNarrow ? 10 : 14),  // Responsive spacing
+              SizedBox(height: isNarrow ? 10 : 14), // Responsive spacing
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1511,11 +1486,11 @@ class _MonthlyActivityCard extends StatelessWidget {
               ),
             ],
           ),
-        );  // Close Container
-      },  // Close builder function
-    );  // Close LayoutBuilder
+        ); // Close Container
+      }, // Close builder function
+    ); // Close LayoutBuilder
   }
-}  // Close _MonthlyActivityCard
+} // Close _MonthlyActivityCard
 
 class _YAxisLabel extends StatelessWidget {
   const _YAxisLabel(this.label);
@@ -1549,16 +1524,13 @@ class _ChartBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: isNarrow ? 40 : 48,  // ⭐ Responsive width
+      width: isNarrow ? 40 : 48, // ⭐ Responsive width
       height: height > 0 ? height : 0,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFFFA755),
-            Color(0xFFFF8C42),
-          ],
+          colors: [Color(0xFFFFA755), Color(0xFFFF8C42)],
         ),
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
@@ -1626,10 +1598,7 @@ class _LogAktivitasCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: const Color(0xFFE8EAF2),
-              width: 1.5,
-            ),
+            border: Border.all(color: const Color(0xFFE8EAF2), width: 1.5),
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFF2F80ED).withValues(alpha: 0.08),
@@ -1650,15 +1619,14 @@ class _LogAktivitasCard extends StatelessWidget {
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFF7C6FFF),
-                          Color(0xFF9D8FFF),
-                        ],
+                        colors: [Color(0xFF7C6FFF), Color(0xFF9D8FFF)],
                       ),
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF7C6FFF).withValues(alpha: 0.25),
+                          color: const Color(
+                            0xFF7C6FFF,
+                          ).withValues(alpha: 0.25),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -1693,7 +1661,8 @@ class _LogAktivitasCard extends StatelessWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _recentActivities.length,
-                separatorBuilder: (context, index) => SizedBox(height: isNarrow ? 8 : 10),
+                separatorBuilder: (context, index) =>
+                    SizedBox(height: isNarrow ? 8 : 10),
                 itemBuilder: (context, index) {
                   final activity = _recentActivities[index];
                   return _ActivityItem(
@@ -1739,7 +1708,8 @@ class _LogAktivitasCard extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Flexible(  // ⭐ Wrap dengan Flexible
+                      Flexible(
+                        // ⭐ Wrap dengan Flexible
                         child: Text(
                           'Lihat Semua Log Aktivitas',
                           style: GoogleFonts.poppins(
@@ -1763,11 +1733,11 @@ class _LogAktivitasCard extends StatelessWidget {
               ),
             ],
           ),
-        );  // Close Container
-      },  // Close builder function
-    );  // Close LayoutBuilder
+        ); // Close Container
+      }, // Close builder function
+    ); // Close LayoutBuilder
   }
-}  // Close _LogAktivitasCard
+} // Close _LogAktivitasCard
 
 class _ActivityItem extends StatelessWidget {
   const _ActivityItem({
@@ -1791,10 +1761,7 @@ class _ActivityItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FA),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE8EAF2),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFFE8EAF2), width: 1),
       ),
       child: Row(
         children: [
@@ -1806,11 +1773,7 @@ class _ActivityItem extends StatelessWidget {
               color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 20,
-            ),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 12),
           // Content
@@ -1893,10 +1856,7 @@ class _PrimaryActionButton extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
-          colors: [
-            Color(0xFF2F80ED),
-            Color(0xFF1E6FD9),
-          ],
+          colors: [Color(0xFF2F80ED), Color(0xFF1E6FD9)],
         ),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
@@ -1928,10 +1888,7 @@ class _PrimaryActionButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.dashboard_customize_rounded,
-              size: 24,
-            ),
+            const Icon(Icons.dashboard_customize_rounded, size: 24),
             const SizedBox(width: 12),
             Text(
               'Selengkapnya',
@@ -1942,10 +1899,7 @@ class _PrimaryActionButton extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(
-              Icons.arrow_forward_rounded,
-              size: 22,
-            ),
+            const Icon(Icons.arrow_forward_rounded, size: 22),
           ],
         ),
       ),

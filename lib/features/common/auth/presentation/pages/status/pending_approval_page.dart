@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:jawara/core/constants/app_routes.dart';
@@ -88,11 +89,7 @@ class PendingApprovalPage extends StatelessWidget {
                     // Logout dan kembali ke pre-auth
                     await FirebaseAuth.instance.signOut();
                     if (context.mounted) {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        AppRoutes.preAuth,
-                        (route) => false,
-                      );
+                      context.go(AppRoutes.login);
                     }
                   },
                   child: const Text('Keluar'),
@@ -105,4 +102,3 @@ class PendingApprovalPage extends StatelessWidget {
     );
   }
 }
-
