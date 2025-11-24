@@ -12,17 +12,9 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum KYCDocumentType {
-  ktp,
-  kk,
-  akteKelahiran,
-}
+enum KYCDocumentType { ktp, kk, akteKelahiran }
 
-enum KYCStatus {
-  pending,
-  approved,
-  rejected,
-}
+enum KYCStatus { pending, approved, rejected }
 
 // Helper class for OCR results
 class OCRResult {
@@ -100,7 +92,7 @@ class KYCDocumentModel {
   final KYCDocumentType documentType;
 
   // ✅ PERBAIKAN: Simpan path & blob name permanent, bukan URL yang bisa expired
-  final String storagePath; // Path blob di Azure Storage (permanent)
+  // final String storagePath; // Path blob di Azure Storage (permanent)
   final String blobName; // Nama blob yang di-custom
 
   final KYCStatus status;
@@ -116,7 +108,7 @@ class KYCDocumentModel {
     this.id,
     required this.userId,
     required this.documentType,
-    required this.storagePath,
+    // required this.storagePath,
     required this.blobName,
     this.status = KYCStatus.pending,
     this.rejectionReason,
@@ -137,14 +129,14 @@ class KYCDocumentModel {
   // Convert from Map with backward compatibility
   factory KYCDocumentModel.fromMap(Map<String, dynamic> map, String id) {
     // Support old data yang masih pakai documentUrl
-    final storagePath = map['storagePath'] ?? map['documentUrl'] ?? '';
-    final blobName = map['blobName'] ?? _extractBlobNameFromUrl(storagePath);
+    // final storagePath = map['storagePath'] ?? map['documentUrl'] ?? '';
+    final blobName = map['blobName'];
 
     return KYCDocumentModel(
       id: id,
       userId: map['userId'] ?? '',
       documentType: documentTypeFromString(map['documentType'] ?? 'ktp'),
-      storagePath: storagePath,
+      // storagePath: storagePath,
       blobName: blobName,
       status: statusFromString(map['status'] ?? 'pending'),
       rejectionReason: map['rejectionReason'],
@@ -182,7 +174,7 @@ class KYCDocumentModel {
     return {
       'userId': userId,
       'documentType': documentTypeToString(documentType),
-      'storagePath': storagePath, // Path permanent di Azure
+      // 'storagePath': storagePath, // Path permanent di Azure
       'blobName': blobName, // Nama blob yang di-custom
       // ❌ documentUrl TIDAK disimpan lagi karena akan expired
       'status': statusToString(status),
@@ -264,7 +256,7 @@ class KYCDocumentModel {
     String? id,
     String? userId,
     KYCDocumentType? documentType,
-    String? storagePath,
+    // String? storagePath,
     String? blobName,
     KYCStatus? status,
     String? rejectionReason,
@@ -279,7 +271,7 @@ class KYCDocumentModel {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       documentType: documentType ?? this.documentType,
-      storagePath: storagePath ?? this.storagePath,
+      // storagePath: storagePath ?? this.storagePath,
       blobName: blobName ?? this.blobName,
       status: status ?? this.status,
       rejectionReason: rejectionReason ?? this.rejectionReason,

@@ -9,16 +9,17 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/kyc_document_model.dart';
-import 'azure_api_service.dart';
+import 'azure_blob_storage_service.dart';
 import 'ocr_service.dart';
 
 class KYCService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final AzureApiService _azureApiService = AzureApiService();
+  final AzureBlobStorageService _azureApiService = AzureBlobStorageService();
   final OCRService _ocrService = OCRService();
 
   // Collection reference
-  CollectionReference get _kycCollection => _firestore.collection('kyc_documents');
+  CollectionReference get _kycCollection =>
+      _firestore.collection('kyc_documents');
 
   // Upload KYC document via Azure API with OCR
   Future<String?> uploadDocument({
@@ -26,12 +27,11 @@ class KYCService {
     required KYCDocumentType documentType,
     required File file,
     bool enableOCR = true,
-    String? customBlobName, // Custom nama blob
+    String? customBlobName,
   }) async {
     try {
       if (kDebugMode) {
         print('📤 Uploading KYC document via API...');
-        print('User ID: $userId');
         print('Document Type: $documentType');
       }
 
@@ -46,7 +46,9 @@ class KYCService {
 
         if (ocrResult != null) {
           if (kDebugMode) {
-            print('✅ OCR completed - NIK: ${ocrResult.nik}, Nama: ${ocrResult.nama}');
+            print(
+              '✅ OCR completed - NIK: ${ocrResult.nik}, Nama: ${ocrResult.nama}',
+            );
             // Check detected document type
             final detectedType = ocrResult.additionalFields?['document_type'];
             if (detectedType != null) {
@@ -58,25 +60,18 @@ class KYCService {
         }
       }
 
-      // Generate custom blob name jika tidak disediakan
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
       final docTypeStr = KYCDocumentModel.documentTypeToString(documentType);
-      final fileExtension = file.path.split('.').last;
 
-      final blobName = customBlobName ??
-        'kyc_${userId}_${docTypeStr}_$timestamp.$fileExtension';
+      final blobName = customBlobName ?? 'kyc_$docTypeStr';
 
       if (kDebugMode) {
         print('📝 Blob name: $blobName');
       }
 
-      // Upload to Azure via API Backend dengan custom blob name
-      final result = await _azureApiService.uploadFile(
+      final result = (await _azureApiService.uploadImage(
         file: file,
-        folder: 'kyc_documents',
-        userId: userId,
-        customFileName: blobName, // Nama file custom
-      );
+        customFileName: blobName,
+      ))?.blobUrl;
 
       if (result == null) {
         throw Exception('Upload failed - no result returned');
@@ -84,23 +79,19 @@ class KYCService {
 
       // Extract blob path dari result
       // Result bisa berupa URL atau path
-      String storagePath;
       String finalBlobName;
 
       if (result.startsWith('http')) {
         // Jika result adalah URL, extract path-nya
         final uri = Uri.parse(result);
-        storagePath = uri.pathSegments.skip(1).join('/'); // Skip container name
         finalBlobName = uri.pathSegments.last;
       } else {
         // Jika result sudah berupa path
-        storagePath = result;
         finalBlobName = blobName;
       }
 
       if (kDebugMode) {
         print('✅ File uploaded successfully');
-        print('Storage Path: $storagePath');
         print('Blob Name: $finalBlobName');
       }
 
@@ -108,7 +99,6 @@ class KYCService {
       final kycDoc = KYCDocumentModel(
         userId: userId,
         documentType: documentType,
-        storagePath: storagePath, // Simpan path, bukan URL
         blobName: finalBlobName, // Simpan blob name
         uploadedAt: DateTime.now(),
         ocrResult: ocrResult,
@@ -156,7 +146,10 @@ class KYCService {
     try {
       final snapshot = await _kycCollection
           .where('userId', isEqualTo: userId)
-          .where('documentType', isEqualTo: KYCDocumentModel.documentTypeToString(documentType))
+          .where(
+            'documentType',
+            isEqualTo: KYCDocumentModel.documentTypeToString(documentType),
+          )
           .orderBy('uploadedAt', descending: true)
           .limit(1)
           .get();
@@ -265,7 +258,10 @@ class KYCService {
         // Delete from Azure via API menggunakan blobName
         if (kycDoc.blobName.isNotEmpty) {
           try {
-            await _azureApiService.deleteFile(kycDoc.blobName);
+            await _azureApiService.deleteFile(
+              blobName: kycDoc.blobName,
+              isPrivate: true,
+            );
             if (kDebugMode) {
               print('✅ File deleted from Azure: ${kycDoc.blobName}');
             }
@@ -304,13 +300,16 @@ class KYCService {
       final kycDoc = KYCDocumentModel.fromFirestore(doc);
 
       // Generate fresh URL dari blob name
-      final url = await _azureApiService.getFileUrl(kycDoc.blobName);
+      final url = await _azureApiService.getImages(
+        filenamePrefix: kycDoc.blobName,
+        isPrivate: true,
+      );
 
       if (kDebugMode) {
         print('✅ Generated fresh URL for: ${kycDoc.blobName}');
       }
 
-      return url;
+      return url?.images.first.blobUrl;
     } catch (e) {
       if (kDebugMode) {
         print('❌ Error generating document URL: $e');
@@ -323,13 +322,16 @@ class KYCService {
   Future<String?> getDocumentUrlFromModel(KYCDocumentModel kycDoc) async {
     try {
       // Generate fresh URL dari blob name
-      final url = await _azureApiService.getFileUrl(kycDoc.blobName);
+      final url = await _azureApiService.getImages(
+        filenamePrefix: kycDoc.blobName,
+        isPrivate: true,
+      );
 
       if (kDebugMode) {
         print('✅ Generated fresh URL for: ${kycDoc.blobName}');
       }
 
-      return url;
+      return url?.images.first.blobUrl;
     } catch (e) {
       if (kDebugMode) {
         print('❌ Error generating document URL: $e');
@@ -344,9 +346,11 @@ class KYCService {
         .where('userId', isEqualTo: userId)
         .orderBy('uploadedAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => KYCDocumentModel.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => KYCDocumentModel.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   // Stream of pending documents (for admin)
@@ -355,9 +359,10 @@ class KYCService {
         .where('status', isEqualTo: 'pending')
         .orderBy('uploadedAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => KYCDocumentModel.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => KYCDocumentModel.fromFirestore(doc))
+              .toList(),
+        );
   }
 }
-
