@@ -15,7 +15,7 @@ import 'package:provider/provider.dart';
 import 'package:jawara/core/providers/auth_provider.dart';
 import 'package:jawara/core/constants/app_routes.dart';
 import 'package:jawara/features/admin/dashboard/dashboard_page.dart';
-import 'package:jawara/features/warga/dashboard/warga_dashboard_page.dart';
+import 'package:jawara/features/warga/warga_main_page.dart';
 import '../widgets/auth_constants.dart';
 import '../widgets/auth_widgets.dart';
 
@@ -71,7 +71,7 @@ class _UnifiedLoginPageState extends State<UnifiedLoginPage> {
             // Warga approved → Dashboard Warga
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const WargaDashboardPage()),
+              MaterialPageRoute(builder: (_) => const WargaMainPage()),
             );
           } else if (user?.status == 'pending') {
             // Warga pending → Halaman waiting approval
