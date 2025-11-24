@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:jawara/core/models/user_model.dart';
@@ -8,7 +9,8 @@ class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email'],
-    // JANGAN tambahkan serverClientId untuk mobile-only!
+    // Web Client ID dari Firebase Console untuk Google Sign In
+    serverClientId: '693556950050-vp8tf6ib0a5vfsqik0m3lm46o1f0786o.apps.googleusercontent.com',
   );
   final FirestoreService _firestoreService = FirestoreService();
 
@@ -471,6 +473,31 @@ class AuthProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return true;
+    } on PlatformException catch (e, stackTrace) {
+      if (kDebugMode) {
+        print('\n❌ GOOGLE SIGN IN PLATFORM ERROR ===');
+        print('Error Code: ${e.code}');
+        print('Error Message: ${e.message}');
+        print('Error Details: ${e.details}');
+        print('StackTrace: $stackTrace');
+        print('==================\n');
+      }
+
+      // Handling error code 10 (API_NOT_AVAILABLE)
+      if (e.code == 'sign_in_failed') {
+        _errorMessage = 'Google Sign In tidak tersedia. Pastikan:\n'
+            '1. Google Play Services terinstall\n'
+            '2. SHA-1 certificate sudah ditambahkan ke Firebase\n'
+            '3. Koneksi internet aktif';
+      } else if (e.code == 'network_error') {
+        _errorMessage = 'Gagal terhubung ke Google. Periksa koneksi internet Anda.';
+      } else {
+        _errorMessage = 'Google Sign In gagal: ${e.message ?? e.code}';
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return false;
     } catch (e, stackTrace) {
       if (kDebugMode) {
         print('\n❌ GOOGLE SIGN IN ERROR ===');
