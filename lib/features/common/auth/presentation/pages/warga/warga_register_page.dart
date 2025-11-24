@@ -16,7 +16,7 @@ import 'package:jawara/core/providers/auth_provider.dart';
 import 'package:jawara/features/common/auth/presentation/widgets/auth_constants.dart';
 import 'package:jawara/features/common/auth/presentation/widgets/auth_widgets.dart';
 import 'package:jawara/features/common/auth/presentation/pages/warga/kyc_upload_page.dart';
-import 'package:jawara/features/warga/dashboard/warga_dashboard_page.dart';
+import 'package:jawara/features/warga/warga_main_page.dart';
 
 class WargaRegisterPage extends StatefulWidget {
   const WargaRegisterPage({super.key});
@@ -67,7 +67,7 @@ class _WargaRegisterPageState extends State<WargaRegisterPage> {
         // Existing verified user - redirect to dashboard
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const WargaDashboardPage()),
+          MaterialPageRoute(builder: (_) => const WargaMainPage()),
         );
       }
     } else {

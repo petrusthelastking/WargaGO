@@ -15,7 +15,7 @@ import 'package:jawara/core/providers/auth_provider.dart';
 import 'package:jawara/core/services/kyc_service.dart';
 import 'package:jawara/features/common/auth/presentation/widgets/auth_constants.dart';
 import 'package:jawara/features/common/auth/presentation/widgets/auth_widgets.dart';
-import 'package:jawara/features/warga/dashboard/warga_dashboard_page.dart';
+import 'package:jawara/features/warga/warga_main_page.dart';
 
 class KYCUploadPage extends StatefulWidget {
   const KYCUploadPage({super.key});
@@ -146,7 +146,7 @@ class _KYCUploadPageState extends State<KYCUploadPage> {
           Navigator.pop(context); // Close dialog
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const WargaDashboardPage()),
+            MaterialPageRoute(builder: (_) => const WargaMainPage()),
           );
         },
       );
@@ -169,7 +169,7 @@ class _KYCUploadPageState extends State<KYCUploadPage> {
   void _skipKYC() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const WargaDashboardPage()),
+      MaterialPageRoute(builder: (_) => const WargaMainPage()),
     );
   }
 

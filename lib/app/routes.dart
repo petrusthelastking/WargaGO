@@ -14,7 +14,7 @@ import 'package:jawara/features/common/auth/presentation/pages/warga/kyc_upload_
 
 // Dashboards
 import 'package:jawara/features/admin/dashboard/dashboard_page.dart'; // Admin Dashboard
-import 'package:jawara/features/warga/dashboard/warga_dashboard_page.dart'; // Warga Dashboard
+import 'package:jawara/features/warga/warga_main_page.dart'; // Warga Main Page (New)
 
 // Status pages
 import 'package:jawara/features/common/auth/presentation/pages/status/pending_approval_page.dart';
@@ -84,7 +84,7 @@ class AppRouter {
 
       case AppRoutes.wargaDashboard:
         return MaterialPageRoute(
-          builder: (_) => const WargaDashboardPage(),
+          builder: (_) => const WargaMainPage(),
           settings: settings,
         );
 

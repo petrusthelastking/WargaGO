@@ -20,7 +20,7 @@ import 'package:provider/provider.dart';
 import 'package:jawara/features/admin/dashboard/dashboard_page.dart';
 import 'package:jawara/features/common/auth/presentation/pages/admin/admin_register_page.dart';
 import 'package:jawara/features/common/auth/presentation/pages/warga/warga_register_page.dart';
-import 'package:jawara/features/warga/dashboard/warga_dashboard_page.dart';
+import 'package:jawara/features/warga/warga_main_page.dart';
 import 'package:jawara/core/providers/auth_provider.dart';
 import '../../widgets/auth_constants.dart';
 import '../../widgets/auth_widgets.dart';
@@ -447,7 +447,7 @@ class _GoogleSignInButtonState extends State<_GoogleSignInButton> {
       // Navigate based on user role and status
       if (user?.role == 'warga') {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const WargaDashboardPage()),
+          MaterialPageRoute(builder: (_) => const WargaMainPage()),
           (route) => false,
         );
       } else {
