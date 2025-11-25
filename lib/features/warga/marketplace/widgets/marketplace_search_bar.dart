@@ -13,14 +13,21 @@ class MarketplaceSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: TextField(
                 decoration: InputDecoration(
@@ -29,14 +36,18 @@ class MarketplaceSearchBar extends StatelessWidget {
                     fontSize: 14,
                     color: const Color(0xFF9CA3AF),
                   ),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: Color(0xFF9CA3AF),
+                  prefixIcon: Container(
+                    padding: const EdgeInsets.all(12),
+                    child: const Icon(
+                      Icons.search,
+                      color: Color(0xFF2F80ED),
+                      size: 22,
+                    ),
                   ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 12,
+                    vertical: 14,
                   ),
                 ),
               ),
@@ -45,11 +56,25 @@ class MarketplaceSearchBar extends StatelessWidget {
           const SizedBox(width: 12),
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF2F80ED),
+                  Color(0xFF1E6FD9),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: IconButton(
-              icon: const Icon(Icons.tune, color: Color(0xFF1F2937)),
+              icon: const Icon(Icons.tune, color: Colors.white),
               onPressed: () {
                 // TODO: Show filter options
               },
