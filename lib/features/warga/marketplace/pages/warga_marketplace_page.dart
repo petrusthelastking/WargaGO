@@ -10,6 +10,7 @@ import '../widgets/marketplace_search_bar.dart';
 import '../widgets/marketplace_category_filter.dart';
 import '../widgets/marketplace_promo_banner.dart';
 import '../widgets/marketplace_product_card.dart';
+import 'cart_page.dart';
 
 class WargaMarketplacePage extends StatelessWidget {
   const WargaMarketplacePage({super.key});
@@ -18,7 +19,7 @@ class WargaMarketplacePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
+      appBar: _buildAppBar(context),
       body: Column(
         children: [
           // Search Bar
@@ -39,7 +40,7 @@ class WargaMarketplacePage extends StatelessWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
@@ -55,7 +56,10 @@ class WargaMarketplacePage extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.shopping_cart_outlined, color: Color(0xFF1F2937)),
           onPressed: () {
-            // TODO: Navigate to cart
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CartPage()),
+            );
           },
         ),
       ],
