@@ -5,12 +5,11 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../widgets/marketplace_app_bar.dart';
 import '../widgets/marketplace_search_bar.dart';
 import '../widgets/marketplace_category_filter.dart';
 import '../widgets/marketplace_promo_banner.dart';
 import '../widgets/marketplace_product_card.dart';
-import 'cart_page.dart';
 
 class WargaMarketplacePage extends StatelessWidget {
   const WargaMarketplacePage({super.key});
@@ -18,51 +17,37 @@ class WargaMarketplacePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(context),
-      body: Column(
-        children: [
-          // Search Bar
-          const MarketplaceSearchBar(),
-          
-          // Category Filter
-          const MarketplaceCategoryFilter(),
-          
-          // Promo Banner
-          const MarketplacePromoBanner(),
-          
-          // Product Grid
-          Expanded(
-            child: _buildProductGrid(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      title: Text(
-        'Produk Sayuran',
-        style: GoogleFonts.poppins(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFF1F2937),
+      backgroundColor: const Color(0xFFF8F9FD),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom App Bar
+            const MarketplaceAppBar(cartCount: 2),
+            
+            const SizedBox(height: 12),
+            
+            // Search Bar
+            const MarketplaceSearchBar(),
+            
+            const SizedBox(height: 8),
+            
+            // Category Filter
+            const MarketplaceCategoryFilter(),
+            
+            const SizedBox(height: 12),
+            
+            // Promo Banner
+            const MarketplacePromoBanner(),
+            
+            const SizedBox(height: 12),
+            
+            // Product Grid
+            Expanded(
+              child: _buildProductGrid(),
+            ),
+          ],
         ),
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.shopping_cart_outlined, color: Color(0xFF1F2937)),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CartPage()),
-            );
-          },
-        ),
-      ],
     );
   }
 
@@ -71,7 +56,7 @@ class WargaMarketplacePage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.75,
+        childAspectRatio: 0.65,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
