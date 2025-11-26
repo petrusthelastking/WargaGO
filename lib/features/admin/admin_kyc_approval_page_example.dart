@@ -19,81 +19,86 @@ class AdminKYCApprovalPage extends StatefulWidget {
 }
 
 class _AdminKYCApprovalPageState extends State<AdminKYCApprovalPage> {
-  late final KYCService _kycService;
+  final KYCService _kycService = KYCService();
 
   @override
   void initState() {
-    KYCService.init().then((kycService) => _kycService = kycService);
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Verifikasi KYC',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: const Color(0xFF2E7D32),
-      ),
-      body: StreamBuilder<List<KYCDocumentModel>>(
-        stream: _kycService.streamPendingDocuments(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
-          final documents = snapshot.data ?? [];
-
-          if (documents.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.check_circle_outline,
-                    size: 100,
-                    color: Colors.grey.shade300,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Tidak ada dokumen pending',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
+    return FutureBuilder(
+      future: _kycService.initializationDone,
+      builder: (context, snapshot) =>
+          (snapshot.connectionState == ConnectionState.waiting)
+          ? const CircularProgressIndicator()
+          : Scaffold(
+              appBar: AppBar(
+                title: Text(
+                  'Verifikasi KYC',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                ),
+                backgroundColor: const Color(0xFF2E7D32),
               ),
-            );
-          }
+              body: StreamBuilder<List<KYCDocumentModel>>(
+                stream: _kycService.streamPendingDocuments(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-          // Group documents by user
-          final Map<String, List<KYCDocumentModel>> groupedDocs = {};
-          for (var doc in documents) {
-            if (!groupedDocs.containsKey(doc.userId)) {
-              groupedDocs[doc.userId] = [];
-            }
-            groupedDocs[doc.userId]!.add(doc);
-          }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: groupedDocs.length,
-            itemBuilder: (context, index) {
-              final userId = groupedDocs.keys.elementAt(index);
-              final userDocs = groupedDocs[userId]!;
+                  final documents = snapshot.data ?? [];
 
-              return _buildUserKYCCard(userId, userDocs);
-            },
-          );
-        },
-      ),
+                  if (documents.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            size: 100,
+                            color: Colors.grey.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Tidak ada dokumen pending',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  // Group documents by user
+                  final Map<String, List<KYCDocumentModel>> groupedDocs = {};
+                  for (var doc in documents) {
+                    if (!groupedDocs.containsKey(doc.userId)) {
+                      groupedDocs[doc.userId] = [];
+                    }
+                    groupedDocs[doc.userId]!.add(doc);
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: groupedDocs.length,
+                    itemBuilder: (context, index) {
+                      final userId = groupedDocs.keys.elementAt(index);
+                      final userDocs = groupedDocs[userId]!;
+
+                      return _buildUserKYCCard(userId, userDocs);
+                    },
+                  );
+                },
+              ),
+            ),
     );
   }
 

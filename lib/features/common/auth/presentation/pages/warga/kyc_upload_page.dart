@@ -26,7 +26,7 @@ class KYCUploadPage extends StatefulWidget {
 }
 
 class _KYCUploadPageState extends State<KYCUploadPage> {
-  late final KYCService _kycService;
+  final KYCService _kycService = KYCService();
   final ImagePicker _picker = ImagePicker();
 
   File? _ktpFile;
@@ -37,7 +37,6 @@ class _KYCUploadPageState extends State<KYCUploadPage> {
 
   @override
   void initState() {
-    KYCService.init().then((kycService) => _kycService = kycService);
     super.initState();
   }
 
@@ -174,50 +173,56 @@ class _KYCUploadPageState extends State<KYCUploadPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AuthColors.background,
-      appBar: _buildAppBar(),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AuthSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: AuthSpacing.xxl),
-              _buildInfoCard(),
-              const SizedBox(height: AuthSpacing.xl),
-              _buildDocumentCard(
-                title: 'KTP (Kartu Tanda Penduduk)',
-                description: 'Upload foto KTP Anda',
-                file: _ktpFile,
-                onUpload: _uploadKTP,
-                onRemove: () => setState(() => _ktpFile = null),
+    return FutureBuilder(
+      future: _kycService.initializationDone,
+      builder: (context, snapshot) =>
+          (snapshot.connectionState == ConnectionState.waiting)
+          ? const CircularProgressIndicator()
+          : Scaffold(
+              backgroundColor: AuthColors.background,
+              appBar: _buildAppBar(),
+              body: SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AuthSpacing.xl),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(),
+                      const SizedBox(height: AuthSpacing.xxl),
+                      _buildInfoCard(),
+                      const SizedBox(height: AuthSpacing.xl),
+                      _buildDocumentCard(
+                        title: 'KTP (Kartu Tanda Penduduk)',
+                        description: 'Upload foto KTP Anda',
+                        file: _ktpFile,
+                        onUpload: _uploadKTP,
+                        onRemove: () => setState(() => _ktpFile = null),
+                      ),
+                      const SizedBox(height: AuthSpacing.lg),
+                      _buildDocumentCard(
+                        title: 'Kartu Keluarga (Opsional)',
+                        description: 'Upload foto Kartu Keluarga',
+                        file: _kkFile,
+                        onUpload: _uploadKK,
+                        onRemove: () => setState(() => _kkFile = null),
+                      ),
+                      const SizedBox(height: AuthSpacing.lg),
+                      _buildDocumentCard(
+                        title: 'Akte Kelahiran (Opsional)',
+                        description: 'Upload foto Akte Kelahiran',
+                        file: _akteFile,
+                        onUpload: _uploadAkte,
+                        onRemove: () => setState(() => _akteFile = null),
+                      ),
+                      const SizedBox(height: AuthSpacing.xxl),
+                      _buildSubmitButton(),
+                      const SizedBox(height: AuthSpacing.md),
+                      _buildSkipButton(),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: AuthSpacing.lg),
-              _buildDocumentCard(
-                title: 'Kartu Keluarga (Opsional)',
-                description: 'Upload foto Kartu Keluarga',
-                file: _kkFile,
-                onUpload: _uploadKK,
-                onRemove: () => setState(() => _kkFile = null),
-              ),
-              const SizedBox(height: AuthSpacing.lg),
-              _buildDocumentCard(
-                title: 'Akte Kelahiran (Opsional)',
-                description: 'Upload foto Akte Kelahiran',
-                file: _akteFile,
-                onUpload: _uploadAkte,
-                onRemove: () => setState(() => _akteFile = null),
-              ),
-              const SizedBox(height: AuthSpacing.xxl),
-              _buildSubmitButton(),
-              const SizedBox(height: AuthSpacing.md),
-              _buildSkipButton(),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 

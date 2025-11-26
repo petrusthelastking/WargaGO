@@ -13,11 +13,13 @@ import 'marketplace/pages/warga_marketplace_page.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/services/kyc_service.dart';
 import '../common/auth/presentation/pages/warga/kyc_upload_page.dart';
+
 class WargaMainPage extends StatefulWidget {
   const WargaMainPage({super.key});
   @override
   State<WargaMainPage> createState() => _WargaMainPageState();
 }
+
 class _WargaMainPageState extends State<WargaMainPage> {
   int _currentIndex = 0;
   final KYCService _kycService = KYCService();
@@ -29,10 +31,10 @@ class _WargaMainPageState extends State<WargaMainPage> {
   void initState() {
     super.initState();
     _allPages = [
-      const WargaHomePage(),           // Index 0: Home
-      const WargaMarketplacePage(),    // Index 1: Marketplace (Perlu KYC)
-      const _IuranPage(),              // Index 2: Iuran (Perlu KYC)
-      const _AkunPage(),               // Index 3: Akun
+      const WargaHomePage(), // Index 0: Home
+      const WargaMarketplacePage(), // Index 1: Marketplace (Perlu KYC)
+      const _IuranPage(), // Index 2: Iuran (Perlu KYC)
+      const _AkunPage(), // Index 3: Akun
     ];
   }
 
@@ -41,14 +43,20 @@ class _WargaMainPageState extends State<WargaMainPage> {
     final authProvider = Provider.of<AuthProvider>(context);
     final userId = authProvider.userModel?.id;
 
-    return Scaffold(
-      body: IndexedStack(
-        index: _getPageIndex(_currentIndex),
-        children: _allPages,
-      ),
-      bottomNavigationBar: userId != null
-          ? _buildBottomNavigationBar(userId)
-          : _buildBottomNavigationBar(''),
+    return FutureBuilder(
+      future: _kycService.initializationDone,
+      builder: (context, snapshot) =>
+          (snapshot.connectionState == ConnectionState.waiting)
+          ? const CircularProgressIndicator()
+          : Scaffold(
+              body: IndexedStack(
+                index: _getPageIndex(_currentIndex),
+                children: _allPages,
+              ),
+              bottomNavigationBar: userId != null
+                  ? _buildBottomNavigationBar(userId)
+                  : _buildBottomNavigationBar(''),
+            ),
     );
   }
 
@@ -57,26 +65,37 @@ class _WargaMainPageState extends State<WargaMainPage> {
     // Navigation: 0=Home, 1=Marketplace, 2=Scan, 3=Iuran, 4=Akun
     // Pages: 0=Home, 1=Marketplace, 2=Iuran, 3=Akun
     switch (navIndex) {
-      case 0: return 0; // Home
-      case 1: return 1; // Marketplace
-      case 3: return 2; // Iuran
-      case 4: return 3; // Akun
-      default: return 0;
+      case 0:
+        return 0; // Home
+      case 1:
+        return 1; // Marketplace
+      case 3:
+        return 2; // Iuran
+      case 4:
+        return 3; // Akun
+      default:
+        return 0;
     }
   }
 
   // Build bottom navigation bar with KYC check
   Widget _buildBottomNavigationBar(String userId) {
     return StreamBuilder<QuerySnapshot>(
-      stream: userId.isNotEmpty ? _kycService.getUserKYCDocuments(userId) : null,
+      stream: userId.isNotEmpty
+          ? _kycService.getUserKYCDocuments(userId)
+          : null,
       builder: (context, snapshot) {
         // Check KYC status
         bool isKYCVerified = false;
 
         if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
           final docs = snapshot.data!.docs;
-          final ktpDoc = docs.where((doc) => doc['documentType'] == 'ktp').firstOrNull;
-          final kkDoc = docs.where((doc) => doc['documentType'] == 'kk').firstOrNull;
+          final ktpDoc = docs
+              .where((doc) => doc['documentType'] == 'ktp')
+              .firstOrNull;
+          final kkDoc = docs
+              .where((doc) => doc['documentType'] == 'kk')
+              .firstOrNull;
 
           if (ktpDoc != null && kkDoc != null) {
             final ktpStatus = ktpDoc['status'] ?? 'pending';
@@ -139,10 +158,7 @@ class _WargaMainPageState extends State<WargaMainPage> {
           ),
         ),
         // Scan button floating di tengah atas - requires KYC
-        Positioned(
-          top: -25,
-          child: _buildScanButton(isKYCVerified),
-        ),
+        Positioned(top: -25, child: _buildScanButton(isKYCVerified)),
       ],
     );
   }
@@ -177,10 +193,7 @@ class _WargaMainPageState extends State<WargaMainPage> {
                   ? const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF5B8DEF),
-                        Color(0xFF2F80ED),
-                      ],
+                      colors: [Color(0xFF5B8DEF), Color(0xFF2F80ED)],
                     )
                   : LinearGradient(
                       begin: Alignment.topLeft,
@@ -218,11 +231,7 @@ class _WargaMainPageState extends State<WargaMainPage> {
                   color: Color(0xFFF59E0B),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.lock,
-                  color: Colors.white,
-                  size: 14,
-                ),
+                child: const Icon(Icons.lock, color: Colors.white, size: 14),
               ),
             ),
         ],
@@ -234,9 +243,7 @@ class _WargaMainPageState extends State<WargaMainPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Container(
@@ -318,9 +325,7 @@ class _WargaMainPageState extends State<WargaMainPage> {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const KYCUploadPage(),
-                ),
+                MaterialPageRoute(builder: (context) => const KYCUploadPage()),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -334,9 +339,7 @@ class _WargaMainPageState extends State<WargaMainPage> {
             ),
             child: Text(
               'Upload Sekarang',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
-              ),
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -366,6 +369,7 @@ class _WargaMainPageState extends State<WargaMainPage> {
       ),
     );
   }
+
   Widget _buildNavItem({
     required int index,
     required IconData icon,
@@ -531,6 +535,7 @@ class _AkunPage extends StatelessWidget {
     );
   }
 }
+
 // ============================================================================
 // CUSTOM PAINTER FOR CURVED BOTTOM NAVIGATION
 // ============================================================================
@@ -559,33 +564,33 @@ class _BottomNavPainter extends CustomPainter {
     // Curve turun ke notch (sisi kiri)
     path.quadraticBezierTo(
       size.width * 0.42, // control point x
-      0,                 // control point y
+      0, // control point y
       size.width * 0.44, // end point x
-      15,                // end point y (depth of curve)
+      15, // end point y (depth of curve)
     );
 
     // Curve ke tengah notch
     path.quadraticBezierTo(
       size.width * 0.48, // control point x
-      25,                // control point y (bottom of notch)
+      25, // control point y (bottom of notch)
       size.width * 0.50, // end point x (center)
-      25,                // end point y
+      25, // end point y
     );
 
     // Curve dari tengah ke kanan notch
     path.quadraticBezierTo(
       size.width * 0.52, // control point x
-      25,                // control point y
+      25, // control point y
       size.width * 0.56, // end point x
-      15,                // end point y
+      15, // end point y
     );
 
     // Curve naik dari notch (sisi kanan)
     path.quadraticBezierTo(
       size.width * 0.58, // control point x
-      0,                 // control point y
+      0, // control point y
       size.width * 0.62, // end point x
-      0,                 // end point y
+      0, // end point y
     );
 
     // Garis horizontal kanan
@@ -609,5 +614,3 @@ class _BottomNavPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
-

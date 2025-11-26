@@ -21,14 +21,13 @@ class KYCDocumentPreview extends StatefulWidget {
 }
 
 class _KYCDocumentPreviewState extends State<KYCDocumentPreview> {
-  late final KYCService _kycService;
+  final KYCService _kycService = KYCService();
   String? _documentUrl;
   bool _isLoading = true;
   String? _error;
 
   @override
   void initState() {
-    KYCService.init().then((kycService) => _kycService = kycService);
     super.initState();
     _loadDocumentUrl();
   }
@@ -66,20 +65,26 @@ class _KYCDocumentPreviewState extends State<KYCDocumentPreview> {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        if (widget.onTap != null && _documentUrl != null) {
-          widget.onTap!();
-        }
-      },
-      child: Container(
-        height: widget.height,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: _buildContent(),
-      ),
+    return FutureBuilder(
+      future: _kycService.initializationDone,
+      builder: (context, snapshot) =>
+          (snapshot.connectionState == ConnectionState.waiting)
+          ? const CircularProgressIndicator()
+          : InkWell(
+              onTap: () {
+                if (widget.onTap != null && _documentUrl != null) {
+                  widget.onTap!();
+                }
+              },
+              child: Container(
+                height: widget.height,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: _buildContent(),
+              ),
+            ),
     );
   }
 

@@ -15,14 +15,28 @@ import 'ocr_service.dart';
 
 class KYCService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final AzureBlobStorageService _azureApiService;
+  late final AzureBlobStorageService _azureApiService;
+
+  late final Future<void> _doneFuture;
+  Future get initializationDone => _doneFuture;
+
   final OCRService _ocrService = OCRService();
 
-  KYCService(this._azureApiService);
+  KYCService() {
+    _doneFuture = _initialize();
+  }
 
-  static Future<KYCService> init() async {
-    final token = await FirebaseAuth.instance.currentUser?.getIdToken();
-    return KYCService(AzureBlobStorageService(firebaseToken: token ?? ''));
+  Future<void> _initialize() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final token = await user?.getIdToken() ?? '';
+      _azureApiService = AzureBlobStorageService(firebaseToken: token);
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error initializing KYCService: $e');
+      }
+      rethrow;
+    }
   }
 
   // Collection reference
@@ -31,9 +45,7 @@ class KYCService {
 
   // Get user KYC documents as Stream (for real-time updates)
   Stream<QuerySnapshot> getUserKYCDocuments(String userId) {
-    return _kycCollection
-        .where('userId', isEqualTo: userId)
-        .snapshots();
+    return _kycCollection.where('userId', isEqualTo: userId).snapshots();
   }
 
   // Upload KYC document via Azure API with OCR
