@@ -2,13 +2,13 @@ class StorageResponse {
   final bool success;
   final String blobName;
   final String blobUrl;
-  final String message;
+  final String? message;
 
   StorageResponse({
     required this.success,
     required this.blobName,
     required this.blobUrl,
-    required this.message,
+    this.message,
   });
 
   factory StorageResponse.fromJson(Map<String, dynamic> json) {
@@ -16,7 +16,7 @@ class StorageResponse {
       success: json['success'] as bool,
       blobName: json['blob_name'] as String,
       blobUrl: json['blob_url'] as String,
-      message: json['message'] as String,
+      message: json['message'] == null ? null : json['message'] as String,
     );
   }
 

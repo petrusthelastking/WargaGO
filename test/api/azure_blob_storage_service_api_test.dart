@@ -1,36 +1,26 @@
 import 'dart:io';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jawara/core/models/BlobStorage/storage_response.dart';
 import 'package:jawara/core/models/BlobStorage/user_images_response.dart';
-import 'package:jawara/core/providers/auth_provider.dart';
 import 'package:jawara/core/services/azure_blob_storage_service.dart';
-import 'package:jawara/firebase_options.dart';
 
-void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+import '../fixtures/utils.dart';
 
+void main() async {
+  late final String token;
+  token = await Utils.getAuthToken();
   group('AzureBlobStorageService - API Tests', () {
     late AzureBlobStorageService service;
-    late AuthProvider auth;
 
-    setUpAll(() async {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    });
-
-    setUp(() async {
-      auth = AuthProvider();
-      await auth.signIn(email: '', password: '');
-      final token = await auth.getToken();
-      service = AzureBlobStorageService(firebaseToken: token ?? '');
-    });
+    setUp(() => service = AzureBlobStorageService(firebaseToken: token));
 
     group('uploadImage', () {
       test('uploads public image successfully', () async {
+        if (kDebugMode) {
+          print('📝 Testing: Upload public image to Azure Blob Storage');
+        }
         final testImagePath = 'test/fixtures/test_images/1.jpg';
         final testFile = File(testImagePath);
 
@@ -55,10 +45,14 @@ void main() {
           print('   Blob Name: ${result.blobName}');
           print('   Blob URL: ${result.blobUrl}');
           print('   Message: ${result.message}');
+          print('');
         }
       }, skip: false);
 
       test('uploads private image successfully', () async {
+        if (kDebugMode) {
+          print('📝 Testing: Upload private image to Azure Blob Storage');
+        }
         final testImagePath = 'test/fixtures/test_images/1.jpg';
         final testFile = File(testImagePath);
 
@@ -84,10 +78,14 @@ void main() {
           print('✅ Private upload successful:');
           print('   Blob Name: ${result.blobName}');
           print('   Blob URL: ${result.blobUrl}');
+          print('');
         }
       }, skip: false);
 
       test('handles different image formats', () async {
+        if (kDebugMode) {
+          print('📝 Testing: Upload different image formats (PNG, GIF, WebP)');
+        }
         final formats = ['png', 'gif', 'webp'];
 
         for (final format in formats) {
@@ -111,11 +109,17 @@ void main() {
             print('✅ $format format upload successful');
           }
         }
+        if (kDebugMode) {
+          print('');
+        }
       }, skip: false);
     });
 
     group('getImages', () {
       test('retrieves public images successfully', () async {
+        if (kDebugMode) {
+          print('📝 Testing: Retrieve public images from Azure Blob Storage');
+        }
         // Act
         final result = await service.getImages(isPrivate: false);
 
@@ -133,10 +137,14 @@ void main() {
           for (var i = 0; i < result.images.length; i++) {
             print('   Image ${i + 1}: ${result.images[i].blobName}');
           }
+          print('');
         }
       }, skip: false);
 
       test('retrieves private images successfully', () async {
+        if (kDebugMode) {
+          print('📝 Testing: Retrieve private images from Azure Blob Storage');
+        }
         // Act
         final result = await service.getImages(isPrivate: true);
 
@@ -147,10 +155,14 @@ void main() {
 
         if (kDebugMode) {
           print('✅ Retrieved ${result.count} private images');
+          print('');
         }
       }, skip: false);
 
       test('retrieves images with filename prefix filter', () async {
+        if (kDebugMode) {
+          print('📝 Testing: Retrieve images with filename prefix filter');
+        }
         // Act
         final result = await service.getImages(
           filenamePrefix: 'test',
@@ -162,18 +174,18 @@ void main() {
         expect(result!, isA<UserImagesResponse>());
         if (kDebugMode) {
           print('✅ Retrieved ${result.count} images with prefix "profile"');
+          print('');
         }
       }, skip: false);
     });
 
     group('deleteFile', () {
       test('deletes public file successfully', () async {
+        if (kDebugMode) {
+          print('📝 Testing: Delete public file from Azure Blob Storage');
+        }
         final testImagePath = 'test/fixtures/test_images/1.jpg';
         final testFile = File(testImagePath);
-
-        if (!await testFile.exists()) {
-          return;
-        }
 
         // Upload first
         final uploadResult = await service.uploadImage(
@@ -183,7 +195,7 @@ void main() {
           customFileName: 'test_delete.jpg',
         );
 
-        final blobName = '${await auth.getToken()}/${uploadResult!.blobName}';
+        final blobName = uploadResult!.blobName;
 
         expect(uploadResult, isNotNull);
         if (kDebugMode) {
@@ -198,10 +210,14 @@ void main() {
 
         if (kDebugMode) {
           print('✅ File deleted successfully: $blobName');
+          print('');
         }
       }, skip: false);
 
       test('deletes private file successfully', () async {
+        if (kDebugMode) {
+          print('📝 Testing: Delete private file from Azure Blob Storage');
+        }
         final testImagePath = 'test/fixtures/test_images/1.jpg';
         final testFile = File(testImagePath);
 
@@ -217,7 +233,7 @@ void main() {
           customFileName: 'test_delete_private.jpg',
         );
 
-        final blobName = '${await auth.getToken()}/${uploadResult!.blobName}';
+        final blobName = uploadResult!.blobName;
 
         expect(uploadResult, isNotNull);
         if (kDebugMode) {
@@ -232,12 +248,16 @@ void main() {
 
         if (kDebugMode) {
           print('✅ File deleted successfully: $blobName');
+          print('');
         }
       }, skip: false);
     });
 
     group('Error handling', () {
       test('handles non-existent file deletion gracefully', () async {
+        if (kDebugMode) {
+          print('📝 Testing: Handle non-existent file deletion error');
+        }
         // Act & Assert
         await expectLater(
           service.deleteFile(
@@ -249,10 +269,14 @@ void main() {
 
         if (kDebugMode) {
           print('✅ Correctly threw exception for non-existent file');
+          print('');
         }
       }, skip: false);
 
       test('handles invalid file upload', () async {
+        if (kDebugMode) {
+          print('📝 Testing: Handle invalid file upload error');
+        }
         // Create an invalid/empty file
         final invalidFile = File('test_invalid.txt');
         await invalidFile.writeAsString('This is not an image');
@@ -264,6 +288,7 @@ void main() {
           );
           if (kDebugMode) {
             print('✅ Correctly handled invalid file upload');
+            print('');
           }
         } finally {
           if (await invalidFile.exists()) {
@@ -275,6 +300,11 @@ void main() {
 
     group('Integration workflow', () {
       test('complete upload, retrieve, and delete workflow', () async {
+        if (kDebugMode) {
+          print(
+            '📝 Testing: Complete integration workflow (upload → retrieve → delete)',
+          );
+        }
         final testImagePath = 'test/fixtures/test_images/1.jpg';
         final testFile = File(testImagePath);
 
@@ -297,8 +327,12 @@ void main() {
 
         expect(uploadResult, isNotNull);
         expect(uploadResult!.success, true);
+
+        final blobName = uploadResult.blobName;
+        final filenamePrefix = '${uniquePrefix}workflow_test';
+
         if (kDebugMode) {
-          print('✅ Upload completed: ${uploadResult.blobName}');
+          print('✅ Upload completed: $blobName');
         }
 
         // 2. Retrieve
@@ -306,7 +340,7 @@ void main() {
           print('📥 Step 2: Retrieving images...');
         }
         final getResult = await service.getImages(
-          uid: uniquePrefix,
+          filenamePrefix: filenamePrefix,
           isPrivate: false,
         );
 
@@ -318,10 +352,10 @@ void main() {
 
         // 3. Delete
         if (kDebugMode) {
-          print('🗑️ Step 3: Deleting image...');
+          print('🗑️ Step 3: Deleting image prefix: $filenamePrefix');
         }
         await expectLater(
-          service.deleteFile(blobName: uploadResult.blobName, isPrivate: false),
+          service.deleteFile(blobName: blobName, isPrivate: false),
           completes,
         );
         if (kDebugMode) {
@@ -333,16 +367,16 @@ void main() {
           print('🔍 Step 4: Verifying deletion...');
         }
         final verifyResult = await service.getImages(
-          uid: uniquePrefix,
+          filenamePrefix: filenamePrefix,
           isPrivate: false,
         );
 
-        // Should return null or empty list after deletion
         if (verifyResult != null) {
           expect(verifyResult.count, 0);
         }
         if (kDebugMode) {
           print('✅ Integration workflow completed successfully');
+          print('');
         }
       }, skip: false);
     });

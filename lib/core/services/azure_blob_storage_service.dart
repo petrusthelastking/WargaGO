@@ -9,11 +9,11 @@ import 'package:jawara/core/models/BlobStorage/user_images_response.dart';
 class AzureBlobStorageService {
   static const String _uploadPublicEndpoint = 'storage/public/upload';
   static const String _getPublicImagesEndpoint = 'storage/public/get-images';
-  static const String _deletePublicEndpoint = 'storage/public/delete';
+  static const String _deletePublicEndpoint = 'storage/public/image';
 
   static const String _uploadPrivateEndpoint = 'storage/private/upload';
   static const String _getPrivateImagesEndpoint = 'storage/private/get-images';
-  static const String _deletePrivateEndpoint = 'storage/private/delete';
+  static const String _deletePrivateEndpoint = 'storage/private/image';
 
   late final http.Client _client;
   final String firebaseToken;
@@ -185,7 +185,7 @@ class AzureBlobStorageService {
       final response = await _client.get(
         UrlConstant.buildAzureEndpoint(
           isPrivate ? _getPrivateImagesEndpoint : _getPublicImagesEndpoint,
-          queryParameters: {'uid': uid, 'filenamePrefix': filenamePrefix},
+          queryParameters: {'uid': uid, 'filename_prefix': filenamePrefix},
         ),
         headers: await _getHeaders(),
       );
