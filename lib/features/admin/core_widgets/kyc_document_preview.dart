@@ -65,20 +65,26 @@ class _KYCDocumentPreviewState extends State<KYCDocumentPreview> {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        if (widget.onTap != null && _documentUrl != null) {
-          widget.onTap!();
-        }
-      },
-      child: Container(
-        height: widget.height,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: _buildContent(),
-      ),
+    return FutureBuilder(
+      future: _kycService.initializationDone,
+      builder: (context, snapshot) =>
+          (snapshot.connectionState == ConnectionState.waiting)
+          ? const CircularProgressIndicator()
+          : InkWell(
+              onTap: () {
+                if (widget.onTap != null && _documentUrl != null) {
+                  widget.onTap!();
+                }
+              },
+              child: Container(
+                height: widget.height,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: _buildContent(),
+              ),
+            ),
     );
   }
 
@@ -156,7 +162,7 @@ class _KYCDocumentPreviewState extends State<KYCDocumentPreview> {
             child: CircularProgressIndicator(
               value: loadingProgress.expectedTotalBytes != null
                   ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
+                        loadingProgress.expectedTotalBytes!
                   : null,
             ),
           );
@@ -168,4 +174,3 @@ class _KYCDocumentPreviewState extends State<KYCDocumentPreview> {
   /// Get current document URL (untuk open di browser/viewer)
   String? get documentUrl => _documentUrl;
 }
-

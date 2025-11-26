@@ -7,9 +7,7 @@ import 'package:jawara/core/services/firestore_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-  );
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
   final FirestoreService _firestoreService = FirestoreService();
 
   UserModel? _userModel;
@@ -21,6 +19,8 @@ class AuthProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _isAuthenticated;
+
+  Future<String?> getToken() async => await _auth.currentUser!.getIdToken();
 
   // Sign in with email and password using Firebase Auth
   Future<bool> signIn({required String email, required String password}) async {
@@ -95,7 +95,7 @@ class AuthProvider with ChangeNotifier {
         print('  - Nama: ${user.nama}');
         print('  - Role: ${user.role}');
         print('  - Status: ${user.status}');
-        print('  - TOKEN: ${await _auth.currentUser!.getIdToken()}');
+        print('  - TOKEN: ${await getToken()}');
       }
 
       // Only block rejected users - others can login
@@ -106,7 +106,8 @@ class AuthProvider with ChangeNotifier {
           print('❌ Status rejected, login denied');
         }
         await _auth.signOut();
-        _errorMessage = 'Akun Anda ditolak oleh admin. Silakan hubungi admin untuk informasi lebih lanjut.';
+        _errorMessage =
+            'Akun Anda ditolak oleh admin. Silakan hubungi admin untuk informasi lebih lanjut.';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -117,7 +118,9 @@ class AuthProvider with ChangeNotifier {
         if (user.status == 'pending') {
           print('⚠️  Status: PENDING - Menunggu approval admin');
         } else if (user.status == 'unverified') {
-          print('⚠️  Status: UNVERIFIED - Belum upload KYC atau belum diverifikasi admin');
+          print(
+            '⚠️  Status: UNVERIFIED - Belum upload KYC atau belum diverifikasi admin',
+          );
         } else if (user.status == 'approved') {
           print('✅ Status: APPROVED - Full access');
         }
@@ -358,7 +361,8 @@ class AuthProvider with ChangeNotifier {
       }
 
       // Obtain auth details from request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       // Create credential for Firebase
       final credential = GoogleAuthProvider.credential(
@@ -486,7 +490,8 @@ class AuthProvider with ChangeNotifier {
 
       // Handling different error codes
       if (e.code == 'sign_in_failed' || e.code == '10') {
-        _errorMessage = 'Google Sign In tidak tersedia.\n\n'
+        _errorMessage =
+            'Google Sign In tidak tersedia.\n\n'
             'Kemungkinan penyebab:\n'
             '• SHA-1 fingerprint belum terdaftar di Firebase Console\n'
             '• Google Play Services perlu update\n'
@@ -498,7 +503,8 @@ class AuthProvider with ChangeNotifier {
             '4. Periksa koneksi internet\n\n'
             'Catatan: Jika device lain bisa login, kemungkinan SHA-1 fingerprint device ini belum terdaftar.';
       } else if (e.code == 'network_error') {
-        _errorMessage = 'Gagal terhubung ke Google.\nPeriksa koneksi internet Anda.';
+        _errorMessage =
+            'Gagal terhubung ke Google.\nPeriksa koneksi internet Anda.';
       } else if (e.code == 'sign_in_canceled') {
         _errorMessage = null; // User cancelled, no error message needed
       } else {
@@ -518,7 +524,8 @@ class AuthProvider with ChangeNotifier {
       }
 
       if (e.code == 'invalid-credential') {
-        _errorMessage = 'Kredensial Google tidak valid.\n\n'
+        _errorMessage =
+            'Kredensial Google tidak valid.\n\n'
             'Kemungkinan penyebab:\n'
             '• SHA-1 fingerprint tidak sesuai\n'
             '• Konfigurasi Firebase salah\n\n'

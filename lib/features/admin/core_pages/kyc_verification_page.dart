@@ -25,84 +25,97 @@ class _KYCVerificationPageState extends State<KYCVerificationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Verifikasi KYC'),
-        actions: [
-          // Test OCR Button
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const OCRTestPage()),
-              );
-            },
-            icon: const Icon(Icons.document_scanner),
-            tooltip: 'Test OCR',
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              setState(() {
-                _selectedStatus = value;
-              });
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'all', child: Text('Semua')),
-              const PopupMenuItem(value: 'pending', child: Text('Pending')),
-              const PopupMenuItem(value: 'approved', child: Text('Approved')),
-              const PopupMenuItem(value: 'rejected', child: Text('Rejected')),
-            ],
-            icon: const Icon(Icons.filter_list),
-          ),
-        ],
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _getKYCStream(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}'),
-            );
-          }
-
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final documents = snapshot.data?.docs ?? [];
-
-          if (documents.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.inbox, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Tidak ada dokumen KYC',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
+    return FutureBuilder(
+      future: _kycService.initializationDone,
+      builder: (context, snapshot) =>
+          (snapshot.connectionState == ConnectionState.waiting)
+          ? const CircularProgressIndicator()
+          : Scaffold(
+              appBar: AppBar(
+                title: const Text('Verifikasi KYC'),
+                actions: [
+                  // Test OCR Button
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const OCRTestPage()),
+                      );
+                    },
+                    icon: const Icon(Icons.document_scanner),
+                    tooltip: 'Test OCR',
+                  ),
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      setState(() {
+                        _selectedStatus = value;
+                      });
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(value: 'all', child: Text('Semua')),
+                      const PopupMenuItem(
+                        value: 'pending',
+                        child: Text('Pending'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'approved',
+                        child: Text('Approved'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'rejected',
+                        child: Text('Rejected'),
+                      ),
+                    ],
+                    icon: const Icon(Icons.filter_list),
                   ),
                 ],
               ),
-            );
-          }
+              body: StreamBuilder<QuerySnapshot>(
+                stream: _getKYCStream(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: documents.length,
-            itemBuilder: (context, index) {
-              final doc = documents[index];
-              final data = doc.data() as Map<String, dynamic>;
-              final kycDoc = KYCDocumentModel.fromMap(data, doc.id);
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-              return _buildKYCCard(kycDoc, doc.id);
-            },
-          );
-        },
-      ),
+                  final documents = snapshot.data?.docs ?? [];
+
+                  if (documents.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inbox, size: 64, color: Colors.grey[400]),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Tidak ada dokumen KYC',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: documents.length,
+                    itemBuilder: (context, index) {
+                      final doc = documents[index];
+                      final data = doc.data() as Map<String, dynamic>;
+                      final kycDoc = KYCDocumentModel.fromMap(data, doc.id);
+
+                      return _buildKYCCard(kycDoc, doc.id);
+                    },
+                  );
+                },
+              ),
+            ),
     );
   }
 
@@ -147,9 +160,7 @@ class _KYCVerificationPageState extends State<KYCVerificationPage> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: statusColor.withValues(alpha: 0.1),
-              border: Border(
-                left: BorderSide(color: statusColor, width: 4),
-              ),
+              border: Border(left: BorderSide(color: statusColor, width: 4)),
             ),
             child: Row(
               children: [
@@ -169,10 +180,7 @@ class _KYCVerificationPageState extends State<KYCVerificationPage> {
                       const SizedBox(height: 4),
                       Text(
                         'User ID: ${kycDoc.userId}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -296,7 +304,12 @@ class _KYCVerificationPageState extends State<KYCVerificationPage> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value, {bool isError = false}) {
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value, {
+    bool isError = false,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -308,10 +321,7 @@ class _KYCVerificationPageState extends State<KYCVerificationPage> {
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
               const SizedBox(height: 2),
               Text(
@@ -375,7 +385,9 @@ class _KYCVerificationPageState extends State<KYCVerificationPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Setujui Dokumen'),
-        content: const Text('Apakah Anda yakin ingin menyetujui dokumen KYC ini?'),
+        content: const Text(
+          'Apakah Anda yakin ingin menyetujui dokumen KYC ini?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -396,10 +408,7 @@ class _KYCVerificationPageState extends State<KYCVerificationPage> {
       // TODO: Get actual admin ID from current user
       final adminId = 'admin123'; // Replace with actual admin ID
 
-      await _kycService.approveDocument(
-        documentId: docId,
-        adminId: adminId,
-      );
+      await _kycService.approveDocument(documentId: docId, adminId: adminId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -412,10 +421,7 @@ class _KYCVerificationPageState extends State<KYCVerificationPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('❌ Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -492,13 +498,9 @@ class _KYCVerificationPageState extends State<KYCVerificationPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('❌ Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 }
-

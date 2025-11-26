@@ -2,24 +2,23 @@ import 'dart:convert';
 import 'dart:io' show File;
 
 import 'package:http/http.dart' as http;
+import 'package:jawara/core/constants/url_constant.dart';
 import 'package:jawara/core/models/PCVK/batch_predict_response.dart';
 import 'package:jawara/core/models/PCVK/health_response.dart';
 import 'package:jawara/core/models/PCVK/models_response.dart';
 import 'package:jawara/core/models/PCVK/predict_response.dart';
 
 class PcvkService {
-  final String _apiUrl =
-      '';
   late final http.Client _client;
 
   PcvkService({http.Client? httpClient}) {
     _client = httpClient ?? http.Client();
   }
 
-  Uri _buildEndpoint(String endpoint) => Uri.parse('$_apiUrl$endpoint');
-
   Future<HealthModelResponse> getHealth() async {
-    final response = await _client.get(_buildEndpoint('health'));
+    final response = await _client.get(
+      UrlConstant.buildAzureEndpoint('health'),
+    );
     if (response.statusCode == 200) {
       return HealthModelResponse.fromJson(json.decode(response.body));
     } else {
@@ -28,7 +27,9 @@ class PcvkService {
   }
 
   Future<List<String>> getClasses() async {
-    final response = await _client.get(_buildEndpoint('classes'));
+    final response = await _client.get(
+      UrlConstant.buildAzureEndpoint('classes'),
+    );
     if (response.statusCode == 200) {
       return List<String>.from(json.decode(response.body)['classes']);
     } else {
@@ -37,7 +38,9 @@ class PcvkService {
   }
 
   Future<ModelsModelResponse> getModels() async {
-    final response = await _client.get(_buildEndpoint('models'));
+    final response = await _client.get(
+      UrlConstant.buildAzureEndpoint('models'),
+    );
     if (response.statusCode == 200) {
       return ModelsModelResponse.fromJson(json.decode(response.body));
     } else {
@@ -52,7 +55,7 @@ class PcvkService {
     String modelType = 'mlpv2_auto-clahe',
     bool applyBrightnessContrast = true,
   }) async {
-    final uri = _buildEndpoint('predict').replace(
+    final uri = UrlConstant.buildAzureEndpoint('predict').replace(
       queryParameters: {
         'use_segmentation': useSegmentation.toString(),
         'seg_method': segMethod,
@@ -84,7 +87,7 @@ class PcvkService {
     String modelType = 'mlpv2_auto-clahe',
     bool applyBrightnessContrast = true,
   }) async {
-    final uri = _buildEndpoint('batch-predict').replace(
+    final uri = UrlConstant.buildAzureEndpoint('batch-predict').replace(
       queryParameters: {
         'use_segmentation': useSegmentation.toString(),
         'seg_method': segMethod,

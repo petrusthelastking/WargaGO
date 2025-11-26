@@ -49,6 +49,7 @@ dependencies:
   mockito: ^5.5.1
   build_runner: ^2.10.4
   go_router: ^17.0.0
+  flutter_dotenv: ^6.0.0
 
 flutter:
   uses-material-design: true
@@ -56,6 +57,7 @@ flutter:
   assets:
     - assets/icons/
     - assets/illustrations/
+    - .env
 
   fonts:
     - family: Fendysa
