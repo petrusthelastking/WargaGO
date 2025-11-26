@@ -29,6 +29,13 @@ class KYCService {
   CollectionReference get _kycCollection =>
       _firestore.collection('kyc_documents');
 
+  // Get user KYC documents as Stream (for real-time updates)
+  Stream<QuerySnapshot> getUserKYCDocuments(String userId) {
+    return _kycCollection
+        .where('userId', isEqualTo: userId)
+        .snapshots();
+  }
+
   // Upload KYC document via Azure API with OCR
   Future<String?> uploadDocument({
     required String userId,

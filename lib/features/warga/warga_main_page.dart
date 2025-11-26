@@ -2,10 +2,17 @@
 // WARGA MAIN PAGE WITH BOTTOM NAVIGATION
 // ============================================================================
 // Main page dengan bottom navigation untuk warga
+// Includes KYC verification alert and menu restrictions
 // ============================================================================
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'home/pages/warga_home_page.dart';
+import 'marketplace/pages/warga_marketplace_page.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../core/services/kyc_service.dart';
+import '../common/auth/presentation/pages/warga/kyc_upload_page.dart';
 class WargaMainPage extends StatefulWidget {
   const WargaMainPage({super.key});
   @override
@@ -13,23 +20,77 @@ class WargaMainPage extends StatefulWidget {
 }
 class _WargaMainPageState extends State<WargaMainPage> {
   int _currentIndex = 0;
-  final List<Widget> _pages = [
-    const WargaHomePage(),
-    const _MarketplacePage(),
-    const _IuranPage(),
-    const _AkunPage(),
-  ];
+  final KYCService _kycService = KYCService();
+
+  // Pages - akan di-restrict berdasarkan KYC status
+  late final List<Widget> _allPages;
+
+  @override
+  void initState() {
+    super.initState();
+    _allPages = [
+      const WargaHomePage(),           // Index 0: Home
+      const WargaMarketplacePage(),    // Index 1: Marketplace (Perlu KYC)
+      const _IuranPage(),              // Index 2: Iuran (Perlu KYC)
+      const _AkunPage(),               // Index 3: Akun
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final userId = authProvider.userModel?.id;
+
     return Scaffold(
       body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
+        index: _getPageIndex(_currentIndex),
+        children: _allPages,
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+      bottomNavigationBar: userId != null
+          ? _buildBottomNavigationBar(userId)
+          : _buildBottomNavigationBar(''),
     );
   }
-  Widget _buildBottomNavigationBar() {
+
+  // Map navigation index to actual page index
+  int _getPageIndex(int navIndex) {
+    // Navigation: 0=Home, 1=Marketplace, 2=Scan, 3=Iuran, 4=Akun
+    // Pages: 0=Home, 1=Marketplace, 2=Iuran, 3=Akun
+    switch (navIndex) {
+      case 0: return 0; // Home
+      case 1: return 1; // Marketplace
+      case 3: return 2; // Iuran
+      case 4: return 3; // Akun
+      default: return 0;
+    }
+  }
+
+  // Build bottom navigation bar with KYC check
+  Widget _buildBottomNavigationBar(String userId) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: userId.isNotEmpty ? _kycService.getUserKYCDocuments(userId) : null,
+      builder: (context, snapshot) {
+        // Check KYC status
+        bool isKYCVerified = false;
+
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          final docs = snapshot.data!.docs;
+          final ktpDoc = docs.where((doc) => doc['documentType'] == 'ktp').firstOrNull;
+          final kkDoc = docs.where((doc) => doc['documentType'] == 'kk').firstOrNull;
+
+          if (ktpDoc != null && kkDoc != null) {
+            final ktpStatus = ktpDoc['status'] ?? 'pending';
+            final kkStatus = kkDoc['status'] ?? 'pending';
+            isKYCVerified = ktpStatus == 'approved' && kkStatus == 'approved';
+          }
+        }
+
+        return _buildBottomNav(isKYCVerified);
+      },
+    );
+  }
+
+  Widget _buildBottomNav(bool isKYCVerified) {
     return Stack(
       clipBehavior: Clip.none,
       alignment: Alignment.bottomCenter,
@@ -48,82 +109,260 @@ class _WargaMainPageState extends State<WargaMainPage> {
                   icon: Icons.home_outlined,
                   activeIcon: Icons.home_rounded,
                   label: 'Home',
+                  enabled: true, // Always enabled
                 ),
                 _buildNavItem(
                   index: 1,
-                  icon: Icons.shopping_bag_outlined,
-                  activeIcon: Icons.shopping_bag_rounded,
+                  icon: Icons.store_outlined,
+                  activeIcon: Icons.store_rounded,
                   label: 'Marketplace',
+                  enabled: isKYCVerified, // Perlu KYC
                 ),
                 // Spacer untuk scan button yang floating
                 const SizedBox(width: 60),
                 _buildNavItem(
-                  index: 2,
-                  icon: Icons.receipt_long_outlined,
-                  activeIcon: Icons.receipt_long_rounded,
+                  index: 3,
+                  icon: Icons.account_balance_wallet_outlined,
+                  activeIcon: Icons.account_balance_wallet_rounded,
                   label: 'Iuran',
+                  enabled: isKYCVerified, // Perlu KYC
                 ),
                 _buildNavItem(
-                  index: 3,
+                  index: 4,
                   icon: Icons.person_outline_rounded,
                   activeIcon: Icons.person_rounded,
                   label: 'Akun',
+                  enabled: true, // Always enabled
                 ),
               ],
             ),
           ),
         ),
-        // Scan button floating di tengah atas
+        // Scan button floating di tengah atas - requires KYC
         Positioned(
           top: -25,
-          child: _buildScanButton(),
+          child: _buildScanButton(isKYCVerified),
         ),
       ],
     );
   }
 
-  Widget _buildScanButton() {
+  Widget _buildScanButton(bool isKYCVerified) {
     return GestureDetector(
       onTap: () {
-        // TODO: Implement scan functionality
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Fitur Scan dalam pengembangan',
-              style: GoogleFonts.poppins(),
+        if (!isKYCVerified) {
+          _showKYCRequiredDialog();
+        } else {
+          // TODO: Implement scan functionality
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Fitur Scan dalam pengembangan',
+                style: GoogleFonts.poppins(),
+              ),
+              backgroundColor: const Color(0xFF2F80ED),
+              behavior: SnackBarBehavior.floating,
             ),
-            backgroundColor: const Color(0xFF2F80ED),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+          );
+        }
       },
-      child: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF5B8DEF),
-              Color(0xFF2F80ED),
-            ],
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              gradient: isKYCVerified
+                  ? const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF5B8DEF),
+                        Color(0xFF2F80ED),
+                      ],
+                    )
+                  : LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF9CA3AF).withValues(alpha: 0.5),
+                        const Color(0xFF6B7280).withValues(alpha: 0.5),
+                      ],
+                    ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: isKYCVerified
+                      ? const Color(0xFF2F80ED).withValues(alpha: 0.4)
+                      : const Color(0xFF9CA3AF).withValues(alpha: 0.2),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.qr_code_scanner_rounded,
+              color: isKYCVerified ? Colors.white : Colors.white70,
+              size: 30,
+            ),
           ),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF2F80ED).withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-              spreadRadius: 2,
+          if (!isKYCVerified)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF59E0B),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock,
+                  color: Colors.white,
+                  size: 14,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showKYCRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.lock_outline_rounded,
+                color: Color(0xFFF59E0B),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'KYC Diperlukan',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1F2937),
+                ),
+              ),
             ),
           ],
         ),
-        child: const Icon(
-          Icons.qr_code_scanner_rounded,
-          color: Colors.white,
-          size: 30,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Untuk mengakses fitur ini, Anda perlu melengkapi verifikasi KYC terlebih dahulu.',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: const Color(0xFF6B7280),
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Dokumen yang dibutuhkan:',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF374151),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildRequirementItem('KTP (Kartu Tanda Penduduk)'),
+                  _buildRequirementItem('KK (Kartu Keluarga)'),
+                ],
+              ),
+            ),
+          ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Nanti',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF6B7280),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const KYCUploadPage(),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2F80ED),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Upload Sekarang',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequirementItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.check_circle_outline,
+            size: 16,
+            color: Color(0xFF2F80ED),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: const Color(0xFF6B7280),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -132,6 +371,7 @@ class _WargaMainPageState extends State<WargaMainPage> {
     required IconData icon,
     required IconData activeIcon,
     required String label,
+    bool enabled = true,
   }) {
     final isActive = _currentIndex == index;
 
@@ -181,50 +421,29 @@ class _WargaMainPageState extends State<WargaMainPage> {
     );
   }
 }
-class _MarketplacePage extends StatelessWidget {
-  const _MarketplacePage();
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FD),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.storefront_rounded,
-              size: 80,
-              color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Marketplace',
-              style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF1F2937),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Fitur dalam pengembangan',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: const Color(0xFF6B7280),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+
+// ============================================================================
+// IURAN PAGE (Requires KYC)
+// ============================================================================
 class _IuranPage extends StatelessWidget {
   const _IuranPage();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FD),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'Iuran',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1F2937),
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -257,12 +476,29 @@ class _IuranPage extends StatelessWidget {
     );
   }
 }
+
+// ============================================================================
+// AKUN PAGE (Always accessible)
+// ============================================================================
 class _AkunPage extends StatelessWidget {
   const _AkunPage();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FD),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'Akun',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1F2937),
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

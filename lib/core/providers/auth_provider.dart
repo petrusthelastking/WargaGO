@@ -7,12 +7,7 @@ import 'package:jawara/core/services/firestore_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email'],
-    // Web Client ID dari Firebase Console untuk Google Sign In
-    serverClientId:
-        '693556950050-vp8tf6ib0a5vfsqik0m3lm46o1f0786o.apps.googleusercontent.com',
-  );
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
   final FirestoreService _firestoreService = FirestoreService();
 
   UserModel? _userModel;
@@ -103,26 +98,32 @@ class AuthProvider with ChangeNotifier {
         print('  - TOKEN: ${await getToken()}');
       }
 
-      // Check if user status is approved
-      if (user.status != 'approved') {
+      // Only block rejected users - others can login
+      // Status 'approved', 'pending', 'unverified' can all login
+      // but features will be limited based on status
+      if (user.status == 'rejected') {
         if (kDebugMode) {
-          print('❌ Status bukan approved: ${user.status}');
+          print('❌ Status rejected, login denied');
         }
         await _auth.signOut();
-        if (user.status == 'pending') {
-          _errorMessage = 'Akun Anda masih menunggu persetujuan admin';
-        } else if (user.status == 'rejected') {
-          _errorMessage = 'Akun Anda ditolak oleh admin';
-        } else {
-          _errorMessage = 'Akun Anda tidak aktif (status: ${user.status})';
-        }
+        _errorMessage =
+            'Akun Anda ditolak oleh admin. Silakan hubungi admin untuk informasi lebih lanjut.';
         _isLoading = false;
         notifyListeners();
         return false;
       }
 
       if (kDebugMode) {
-        print('✅ Status approved!');
+        print('✅ Login allowed for status: ${user.status}');
+        if (user.status == 'pending') {
+          print('⚠️  Status: PENDING - Menunggu approval admin');
+        } else if (user.status == 'unverified') {
+          print(
+            '⚠️  Status: UNVERIFIED - Belum upload KYC atau belum diverifikasi admin',
+          );
+        } else if (user.status == 'approved') {
+          print('✅ Status: APPROVED - Full access');
+        }
         print('🎉 LOGIN BERHASIL!');
         print('===================\n');
       }
@@ -487,18 +488,53 @@ class AuthProvider with ChangeNotifier {
         print('==================\n');
       }
 
-      // Handling error code 10 (API_NOT_AVAILABLE)
-      if (e.code == 'sign_in_failed') {
+      // Handling different error codes
+      if (e.code == 'sign_in_failed' || e.code == '10') {
         _errorMessage =
-            'Google Sign In tidak tersedia. Pastikan:\n'
-            '1. Google Play Services terinstall\n'
-            '2. SHA-1 certificate sudah ditambahkan ke Firebase\n'
-            '3. Koneksi internet aktif';
+            'Google Sign In tidak tersedia.\n\n'
+            'Kemungkinan penyebab:\n'
+            '• SHA-1 fingerprint belum terdaftar di Firebase Console\n'
+            '• Google Play Services perlu update\n'
+            '• Koneksi internet tidak stabil\n\n'
+            'Solusi:\n'
+            '1. Pastikan SHA-1 fingerprint HP sudah terdaftar di Firebase\n'
+            '2. Update Google Play Services di HP\n'
+            '3. Restart aplikasi dan coba lagi\n'
+            '4. Periksa koneksi internet\n\n'
+            'Catatan: Jika device lain bisa login, kemungkinan SHA-1 fingerprint device ini belum terdaftar.';
       } else if (e.code == 'network_error') {
         _errorMessage =
-            'Gagal terhubung ke Google. Periksa koneksi internet Anda.';
+            'Gagal terhubung ke Google.\nPeriksa koneksi internet Anda.';
+      } else if (e.code == 'sign_in_canceled') {
+        _errorMessage = null; // User cancelled, no error message needed
       } else {
         _errorMessage = 'Google Sign In gagal: ${e.message ?? e.code}';
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } on FirebaseAuthException catch (e, stackTrace) {
+      if (kDebugMode) {
+        print('\n❌ FIREBASE AUTH ERROR ===');
+        print('Error Code: ${e.code}');
+        print('Error Message: ${e.message}');
+        print('StackTrace: $stackTrace');
+        print('==================\n');
+      }
+
+      if (e.code == 'invalid-credential') {
+        _errorMessage =
+            'Kredensial Google tidak valid.\n\n'
+            'Kemungkinan penyebab:\n'
+            '• SHA-1 fingerprint tidak sesuai\n'
+            '• Konfigurasi Firebase salah\n\n'
+            'Solusi:\n'
+            '1. Periksa SHA-1 di Firebase Console\n'
+            '2. Download ulang google-services.json\n'
+            '3. Rebuild aplikasi';
+      } else {
+        _errorMessage = 'Firebase Auth gagal: ${e.message}';
       }
 
       _isLoading = false;
@@ -672,13 +708,25 @@ class AuthProvider with ChangeNotifier {
 
       // Get user data from Firestore
       final user = await _firestoreService.getUserById(currentUser.uid);
-      if (user == null || user.status != 'approved') {
+
+      // Only block if user doesn't exist or is rejected
+      // Allow approved, pending, and unverified to stay logged in
+      if (user == null) {
         await _auth.signOut();
         _isAuthenticated = false;
         _userModel = null;
         return false;
       }
 
+      // Only sign out if rejected
+      if (user.status == 'rejected') {
+        await _auth.signOut();
+        _isAuthenticated = false;
+        _userModel = null;
+        return false;
+      }
+
+      // User exists and not rejected - keep them logged in
       _userModel = user;
       _isAuthenticated = true;
       return true;
