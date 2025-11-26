@@ -7,13 +7,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+// Import halaman profil yang sudah kita buat (statis)
+import '../profile/akun_screen.dart';
+
 class HomeAppBar extends StatelessWidget {
   final int notificationCount;
 
-  const HomeAppBar({
-    super.key,
-    this.notificationCount = 3,
-  });
+  const HomeAppBar({super.key, this.notificationCount = 3});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +23,7 @@ class HomeAppBar extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 12,
             offset: const Offset(0, 3),
           ),
@@ -62,13 +62,14 @@ class HomeAppBar extends StatelessWidget {
               _buildNotificationButton(
                 onTap: () {
                   // TODO: Navigate to notifications
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Notifikasi diklik (statis)')),
+                  );
                 },
               ),
               const SizedBox(width: 12),
               _buildProfileButton(
-                onTap: () {
-                  // TODO: Navigate to profile
-                },
+                context: context, // Pass context biar bisa Navigator.push
               ),
             ],
           ),
@@ -130,9 +131,16 @@ class HomeAppBar extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileButton({required VoidCallback onTap}) {
+  // Update: langsung navigasi ke AkunScreen
+  Widget _buildProfileButton({required BuildContext context}) {
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const AkunScreen(), // Langsung ke halaman Akun
+          ),
+        );
+      },
       borderRadius: BorderRadius.circular(12),
       child: Container(
         width: 44,
@@ -140,19 +148,19 @@ class HomeAppBar extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
+            color: const Color(0xFF2F80ED).withOpacity(0.3),
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF2F80ED).withValues(alpha: 0.15),
+              color: const Color(0xFF2F80ED).withOpacity(0.15),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
           ],
           image: const DecorationImage(
             image: NetworkImage(
-              'https://i.pravatar.cc/150?img=47',
+              'https://i.pravatar.cc/150?img=68', // Foto statis sesuai desain
             ),
             fit: BoxFit.cover,
           ),
@@ -161,4 +169,3 @@ class HomeAppBar extends StatelessWidget {
     );
   }
 }
-
