@@ -12,6 +12,7 @@ import '../widgets/checkout_message_field.dart';
 import '../widgets/checkout_shipping_option.dart';
 import '../widgets/checkout_payment_method.dart';
 import '../widgets/checkout_bottom_bar.dart';
+import 'my_orders_page.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -137,7 +138,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
       bottomNavigationBar: CheckoutBottomBar(
         totalPrice: _getTotalPrice(),
         onCheckout: () {
-          // TODO: Process checkout
+          // Navigasi ke halaman pesanan saya
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MyOrdersPage()),
+          );
         },
       ),
     );
