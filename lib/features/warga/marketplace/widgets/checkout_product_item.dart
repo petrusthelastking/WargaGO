@@ -14,6 +14,8 @@ class CheckoutProductItem extends StatelessWidget {
   final String unit;
   final String price;
   final String imageUrl;
+  final String shippingCost;
+  final String shippingName;
 
   const CheckoutProductItem({
     super.key,
@@ -23,6 +25,8 @@ class CheckoutProductItem extends StatelessWidget {
     required this.unit,
     required this.price,
     required this.imageUrl,
+    required this.shippingCost,
+    required this.shippingName,
   });
 
   @override
@@ -132,12 +136,12 @@ class CheckoutProductItem extends StatelessWidget {
           
           const Divider(height: 24, color: Color(0xFFE5E7EB)),
           
-          // Total
+          // Subtotal Produk
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Total 1 Produk',
+                'Subtotal Produk',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   color: const Color(0xFF6B7280),
@@ -146,9 +150,61 @@ class CheckoutProductItem extends StatelessWidget {
               Text(
                 price,
                 style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: const Color(0xFF1F2937),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          
+          // Biaya Pengiriman
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                shippingName,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: const Color(0xFF6B7280),
+                ),
+              ),
+              Text(
+                shippingCost,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: shippingCost == 'Gratis'
+                      ? const Color(0xFF10B981)
+                      : const Color(0xFF1F2937),
+                  fontWeight: shippingCost == 'Gratis'
+                      ? FontWeight.w600
+                      : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Divider(height: 16, color: Color(0xFFE5E7EB)),
+          const SizedBox(height: 8),
+          
+          // Total Keseluruhan
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total Pembayaran',
+                style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF1F2937),
+                ),
+              ),
+              Text(
+                _calculateTotal(),
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2F80ED),
                 ),
               ),
             ],
@@ -156,5 +212,22 @@ class CheckoutProductItem extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _calculateTotal() {
+    // Parse harga produk
+    int productPrice = int.parse(price.replaceAll(RegExp(r'[^0-9]'), ''));
+    
+    // Parse harga pengiriman
+    int shippingPrice = 0;
+    if (shippingCost != 'Gratis') {
+      shippingPrice = int.parse(shippingCost.replaceAll(RegExp(r'[^0-9]'), ''));
+    }
+    
+    // Hitung total
+    int total = productPrice + shippingPrice;
+    
+    // Format kembali ke string
+    return 'Rp. ${total.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
   }
 }
