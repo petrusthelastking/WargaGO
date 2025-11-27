@@ -1,7 +1,7 @@
 name: jawara
 description: "A new Flutter project."
 publish_to: "none"
-version: 0.1.0+35
+version: 0.1.0+38
 
 environment:
   sdk: ^3.9.2
@@ -57,7 +57,6 @@ flutter:
   assets:
     - assets/icons/
     - assets/illustrations/
-    - .env
 
   fonts:
     - family: Fendysa
