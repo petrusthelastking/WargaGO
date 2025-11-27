@@ -57,15 +57,21 @@ class FirestoreService {
   // Get user by ID
   Future<UserModel?> getUserById(String userId) async {
     try {
+      print('\n=== FirestoreService.getUserById ===');
+      print('Input userId: "$userId"');
+
       final doc = await _firestore.collection('users').doc(userId).get();
 
       if (!doc.exists) {
+        print('❌ Document with ID "$userId" not found');
+        print('ℹ️  This might be a legacy admin created without Firebase Auth UID');
         return null;
       }
 
+      print('✅ Document found with ID: ${doc.id}');
       return UserModel.fromMap(doc.data()!, doc.id);
     } catch (e) {
-      print('Error getting user by ID: $e');
+      print('❌ Error getting user by ID: $e');
       return null;
     }
   }

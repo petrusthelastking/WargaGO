@@ -15,6 +15,7 @@ import 'core/providers/agenda_provider.dart';
 import 'core/providers/pemasukan_lain_provider.dart';
 import 'core/providers/pengeluaran_provider.dart';
 import 'core/providers/laporan_keuangan_detail_provider.dart';
+import 'create_admin.dart'; // ✨ TEMPORARY - Untuk membuat admin2
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -75,6 +76,23 @@ void main() async {
   */
 
   print('✅ Firebase initialized successfully');
+
+  // ============================================================================
+  // ✨ TEMPORARY: CREATE ADMIN2@JAWARA.COM
+  // ============================================================================
+  // Uncomment kode di bawah ini untuk membuat admin2@jawara.com
+  // Setelah admin berhasil dibuat, COMMENT KEMBALI kode ini
+  // ============================================================================
+
+  try {
+    print('\n🔧 Checking/Creating admin2@jawara.com...');
+    await createAdmin2();
+  } catch (e) {
+    print('⚠️  Error creating admin2: $e');
+    print('   (Abaikan jika admin sudah ada)');
+  }
+
+  // ============================================================================
 
   // Initialize Indonesian locale for date formatting
   await initializeDateFormatting('id_ID', null);

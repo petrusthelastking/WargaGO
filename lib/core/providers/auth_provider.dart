@@ -68,18 +68,43 @@ class AuthProvider with ChangeNotifier {
       if (kDebugMode) {
         print('✅ Firebase Auth successful!');
         print('Firebase UID: ${userCredential.user!.uid}');
+        print('Email: ${userCredential.user!.email}');
         print('🔍 Getting user data from Firestore...');
       }
 
       // Get user data from Firestore using UID
-      final user = await _firestoreService.getUserById(
+      var user = await _firestoreService.getUserById(
         userCredential.user!.uid,
       );
 
+      // FALLBACK: If user not found by UID, try to find by email
+      // This handles legacy admin accounts created without Firebase Auth UID
+      if (user == null && userCredential.user!.email != null) {
+        if (kDebugMode) {
+          print('⚠️  User not found by UID, trying fallback query by email...');
+          print('   Email: ${userCredential.user!.email}');
+        }
+
+        user = await _firestoreService.getUserByEmail(
+          userCredential.user!.email!,
+        );
+
+        if (user != null) {
+          if (kDebugMode) {
+            print('✅ User found by email! (Legacy admin account detected)');
+            print('   Document ID: ${user.id}');
+            print('   Firebase UID: ${userCredential.user!.uid}');
+            print('   ⚠️  Consider migrating this account to use Firebase UID as document ID');
+          }
+        }
+      }
+
       if (user == null) {
         if (kDebugMode) {
-          print('❌ User not found in Firestore');
+          print('❌ User not found in Firestore (both by UID and email)');
           print('⚠️  User exists in Firebase Auth but not in Firestore!');
+          print('   Firebase UID: ${userCredential.user!.uid}');
+          print('   Email: ${userCredential.user!.email}');
         }
         await _auth.signOut();
         _errorMessage = 'Data pengguna tidak ditemukan';
