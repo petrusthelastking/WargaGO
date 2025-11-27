@@ -22,7 +22,14 @@ void main() async {
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  await dotenv.load(fileName: ".env");
+  // Load .env only if file exists (for local development/testing)
+  // In production APK, .env doesn't exist (for security reasons)
+  try {
+    await dotenv.load(fileName: ".env");
+    print('✅ .env file loaded (development mode)');
+  } catch (e) {
+    print('ℹ️  .env file not found (production mode) - This is normal');
+  }
 
   // ============================================================================
   // CONNECTION TEST DISABLED
