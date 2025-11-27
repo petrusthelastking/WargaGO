@@ -119,8 +119,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     // Metode Pembayaran
                     CheckoutPaymentMethod(
                       selectedMethod: selectedPayment,
-                      onTap: () {
-                        // TODO: Show payment method selection
+                      onChanged: (value) {
+                        setState(() {
+                          selectedPayment = value;
+                        });
                       },
                     ),
 
