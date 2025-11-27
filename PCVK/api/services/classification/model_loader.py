@@ -128,6 +128,75 @@ class ModelManager:
     def get_models_status(self) -> Dict[str, bool]:
         """Get loading status of all models"""
         return {model_type: self.is_loaded(model_type) for model_type in MODEL_PATHS.keys()}
+    
+    def _clear_u2netp_session(self) -> None:
+        """Clear U2Net-P ONNX session from segment module"""
+        try:
+            import lib.segment as segment_module
+            if hasattr(segment_module, '_u2netp_session') and segment_module._u2netp_session is not None:
+                del segment_module._u2netp_session
+                segment_module._u2netp_session = None
+                print("U2Net-P ONNX session cleared")
+        except Exception as e:
+            print(f"Error clearing U2Net-P session: {e}")
+    
+    def unload_model(self, model_type: str) -> bool:
+        """
+        Unload a specific model from memory
+        
+        Args:
+            model_type: Type of model to unload
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            if model_type not in self.models:
+                print(f"Model {model_type} is not loaded")
+                return False
+            
+            # Delete the model and free up memory
+            del self.models[model_type]
+            
+            # Clear U2Net-P ONNX session
+            self._clear_u2netp_session()
+            
+            # Clear GPU cache if using CUDA
+            if DEVICE == 'cuda':
+                torch.cuda.empty_cache()
+            
+            print(f"Model {model_type} unloaded successfully")
+            return True
+        
+        except Exception as e:
+            print(f"Error unloading model {model_type}: {e}")
+            return False
+    
+    def unload_all_models(self) -> bool:
+        """
+        Unload all models from memory
+        
+        Returns:
+            True if successful
+        """
+        try:
+            model_types = list(self.models.keys())
+            for model_type in model_types:
+                del self.models[model_type]
+            
+            # Clear U2Net-P ONNX session
+            self._clear_u2netp_session()
+            
+            # Clear GPU cache if using CUDA
+            if DEVICE == 'cuda':
+                torch.cuda.empty_cache()
+            
+            print("All models unloaded successfully")
+            return True
+        
+        except Exception as e:
+            print(f"Error unloading all models: {e}")
+            return False
 
 
 # Global model manager instance

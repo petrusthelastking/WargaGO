@@ -16,7 +16,8 @@ from api.models.pcvk_models import (
     ModelsInfoResponse,
     ModelInfo,
     BatchPredictionResponse,
-    BatchPredictionResult
+    BatchPredictionResult,
+    UnloadModelResponse
 )
 from api.configs.pcvk_config import (
     CLASS_NAMES,
@@ -109,17 +110,15 @@ async def predict(
     Returns:
         Prediction results with confidence scores
     """
-    # Check if any models are loaded
-    if len(model_manager.get_loaded_models()) == 0:
-        raise HTTPException(status_code=503, detail="No models loaded")
-    
-    # Validate model type
+    # Load model if not already loaded
     if not model_manager.is_loaded(model_type):
-        available = model_manager.get_loaded_models()
-        raise HTTPException(
-            status_code=400,
-            detail=f"Model type '{model_type}' not available. Available models: {available}"
-        )
+        print(f"Model {model_type} not loaded, loading now...")
+        success = model_manager.load_model(model_type)
+        if not success:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to load model '{model_type}'"
+            )
     
     # Validate file type
     if not file.content_type.startswith("image/"):
@@ -196,17 +195,15 @@ async def batch_predict(
     Returns:
         List of prediction results
     """
-    # Check if any models are loaded
-    if len(model_manager.get_loaded_models()) == 0:
-        raise HTTPException(status_code=503, detail="No models loaded")
-    
-    # Validate model type
+    # Load model if not already loaded
     if not model_manager.is_loaded(model_type):
-        available = model_manager.get_loaded_models()
-        raise HTTPException(
-            status_code=400,
-            detail=f"Model type '{model_type}' not available. Available models: {available}"
-        )
+        print(f"Model {model_type} not loaded, loading now...")
+        success = model_manager.load_model(model_type)
+        if not success:
+            raise HTTPException(
+                status_code=503,
+                detail=f"Failed to load model '{model_type}'"
+            )
     
     # Get model
     model = model_manager.get_model(model_type)
@@ -278,3 +275,57 @@ async def batch_predict(
     total_time_ms = (time.time() - batch_start_time) * 1000
     
     return BatchPredictionResponse(results=results, total_time_ms=total_time_ms)
+
+
+@router.post("/unload", response_model=UnloadModelResponse)
+async def unload_model(
+    model_type: str = Query("", description="Model type to unload (mlpv2, mlpv2_auto-clahe, efficientnetv2). Empty to unload all")
+):
+    """
+    Unload model(s) from memory
+    
+    Args:
+        model_type: Type of model to unload. If empty, unloads all models.
+    
+    Returns:
+        Unload status and information
+    """
+    unloaded = []
+    
+    try:
+        if model_type == "":
+            # Unload all models
+            unloaded = model_manager.get_loaded_models().copy()
+            success = model_manager.unload_all_models()
+            message = "All models unloaded successfully" if success else "Failed to unload all models"
+        else:
+            # Validate model type
+            if model_type not in MODEL_PATHS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid model type '{model_type}'. Valid types: {list(MODEL_PATHS.keys())}"
+                )
+            
+            # Unload specific model
+            if model_manager.is_loaded(model_type):
+                success = model_manager.unload_model(model_type)
+                if success:
+                    unloaded = [model_type]
+                    message = f"Model '{model_type}' unloaded successfully"
+                else:
+                    message = f"Failed to unload model '{model_type}'"
+            else:
+                success = True
+                message = f"Model '{model_type}' was not loaded"
+        
+        return UnloadModelResponse(
+            success=success,
+            message=message,
+            unloaded_models=unloaded,
+            remaining_models=model_manager.get_loaded_models()
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error unloading model: {str(e)}")
