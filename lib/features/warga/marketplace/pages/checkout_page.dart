@@ -22,8 +22,36 @@ class CheckoutPage extends StatefulWidget {
 
 class _CheckoutPageState extends State<CheckoutPage> {
   String messageToSeller = '';
-  String selectedShipping = 'Tinggalkan pesan';
+  String selectedShipping = 'Pengiriman Reguler';
   String selectedPayment = 'Transfer Bank';
+
+  // Helper method untuk mendapatkan biaya pengiriman
+  String _getShippingCost() {
+    switch (selectedShipping) {
+      case 'Pengiriman Reguler':
+        return 'Gratis';
+      case 'Pengiriman Express':
+        return 'Rp. 10.000';
+      case 'Ambil Sendiri':
+        return 'Gratis';
+      default:
+        return 'Gratis';
+    }
+  }
+
+  // Helper method untuk mendapatkan total
+  String _getTotalPrice() {
+    int productPrice = 10000;
+    int shippingCost = 0;
+    
+    String shipping = _getShippingCost();
+    if (shipping != 'Gratis') {
+      shippingCost = int.parse(shipping.replaceAll(RegExp(r'[^0-9]'), ''));
+    }
+    
+    int total = productPrice + shippingCost;
+    return 'Rp. ${total.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,14 +79,28 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                     const SizedBox(height: 16),
 
+                    // Opsi Pengiriman
+                    CheckoutShippingOption(
+                      selectedOption: selectedShipping,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedShipping = value;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
                     // Product Item
-                    const CheckoutProductItem(
+                    CheckoutProductItem(
                       storeName: 'Toko Sayur Rafcol',
                       productName: 'Sayur Wortel',
                       quantity: 1,
                       unit: 'kg',
                       price: 'Rp.10.000',
                       imageUrl: 'https://via.placeholder.com/60',
+                      shippingCost: _getShippingCost(),
+                      shippingName: selectedShipping,
                     ),
 
                     const SizedBox(height: 16),
@@ -68,18 +110,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       onChanged: (value) {
                         setState(() {
                           messageToSeller = value;
-                        });
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Opsi Pengiriman
-                    CheckoutShippingOption(
-                      selectedOption: selectedShipping,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedShipping = value;
                         });
                       },
                     ),
@@ -103,7 +133,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         ),
       ),
       bottomNavigationBar: CheckoutBottomBar(
-        totalPrice: 'Rp. 10.000',
+        totalPrice: _getTotalPrice(),
         onCheckout: () {
           // TODO: Process checkout
         },
