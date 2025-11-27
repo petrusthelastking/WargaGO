@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 
@@ -71,9 +72,13 @@ class AdminUserData {
 /// Service untuk manage admin users
 class AdminSetupService {
   final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
 
-  AdminSetupService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  AdminSetupService({
+    FirebaseFirestore? firestore,
+    FirebaseAuth? auth,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance;
 
   /// Hash password menggunakan SHA-256
   String _hashPassword(String password) {
@@ -82,8 +87,19 @@ class AdminSetupService {
     return hash.toString();
   }
 
-  /// Cek apakah user dengan email tertentu sudah ada
-  Future<bool> _isUserExists(String email) async {
+  /// Cek apakah user dengan email tertentu sudah ada di Firebase Auth
+  Future<bool> _isUserExistsInAuth(String email) async {
+    try {
+      final methods = await _auth.fetchSignInMethodsForEmail(email);
+      return methods.isNotEmpty;
+    } catch (e) {
+      print('❌ Error checking user in Firebase Auth: $e');
+      return false;
+    }
+  }
+
+  /// Cek apakah user dengan email tertentu sudah ada di Firestore
+  Future<bool> _isUserExistsInFirestore(String email) async {
     try {
       final querySnapshot = await _firestore
           .collection(AdminConstants.usersCollection)
@@ -93,12 +109,82 @@ class AdminSetupService {
 
       return querySnapshot.docs.isNotEmpty;
     } catch (e) {
-      print('❌ Error checking user existence: $e');
+      print('❌ Error checking user in Firestore: $e');
       return false;
     }
   }
 
-  /// Buat admin user baru
+  /// Buat admin user baru di Firebase Auth DAN Firestore
+  /// Document ID di Firestore akan sama dengan Firebase Auth UID
+  Future<bool> createAdminWithAuth(AdminUserData adminData) async {
+    try {
+      print('🔧 Membuat admin: ${adminData.email}');
+
+      // 1. Cek apakah sudah ada di Firebase Auth
+      final existsInAuth = await _isUserExistsInAuth(adminData.email);
+      if (existsInAuth) {
+        print('⚠️  User sudah ada di Firebase Auth');
+        return false;
+      }
+
+      // 2. Cek apakah sudah ada di Firestore
+      final existsInFirestore = await _isUserExistsInFirestore(adminData.email);
+      if (existsInFirestore) {
+        print('⚠️  User sudah ada di Firestore');
+        return false;
+      }
+
+      print('📝 Creating user in Firebase Auth...');
+
+      // 3. Buat user di Firebase Auth terlebih dahulu
+      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: adminData.email,
+        password: adminData.password,
+      );
+
+      if (userCredential.user == null) {
+        print('❌ Gagal membuat user di Firebase Auth');
+        return false;
+      }
+
+      final firebaseUid = userCredential.user!.uid;
+      print('✅ User created in Firebase Auth!');
+      print('   Firebase UID: $firebaseUid');
+
+      // 4. Hash password untuk disimpan di Firestore
+      final hashedPassword = _hashPassword(adminData.password);
+
+      // 5. Siapkan data untuk Firestore
+      final adminDataMap = adminData.toFirestoreMap();
+      adminDataMap['password'] = hashedPassword;
+
+      print('📝 Creating user in Firestore...');
+
+      // 6. Simpan ke Firestore menggunakan Firebase UID sebagai document ID
+      await _firestore
+          .collection(AdminConstants.usersCollection)
+          .doc(firebaseUid)  // ✨ Gunakan Firebase UID sebagai document ID
+          .set(adminDataMap);
+
+      print('✅ User created in Firestore!');
+      print('   Document ID: $firebaseUid');
+      print('');
+      print('🎉 Admin berhasil dibuat!');
+      print('📧 Email: ${adminData.email}');
+      print('🔑 Password: ${adminData.password}');
+      print('🆔 Firebase UID: $firebaseUid');
+      print('✨ Status: ${adminData.status}');
+      print('👤 Nama: ${adminData.nama}');
+      print('');
+
+      return true;
+    } catch (e) {
+      print('❌ Error creating admin: $e');
+      return false;
+    }
+  }
+
+  /// [DEPRECATED] Method lama - hanya membuat di Firestore
   Future<bool> _createAdmin(AdminUserData adminData) async {
     try {
       // Hash password sebelum disimpan
@@ -133,21 +219,8 @@ class AdminSetupService {
       alamat: AdminConstants.defaultAddress,
     );
 
-    // Cek apakah sudah ada
-    final exists = await _isUserExists(defaultAdmin.email);
-    if (exists) {
-      print('⏭️  Admin default sudah ada, skip.');
-      return;
-    }
-    
-    // Buat admin baru
-    final success = await _createAdmin(defaultAdmin);
-    if (success) {
-      print('✅ Admin default berhasil dibuat!');
-      print('📧 Email: ${defaultAdmin.email}');
-      print('🔑 Password: ${defaultAdmin.password}');
-      print('✨ Status: Approved (Langsung bisa login)');
-    }
+    // Gunakan method baru yang membuat di Firebase Auth + Firestore
+    await createAdminWithAuth(defaultAdmin);
   }
 
   /// Buat multiple admin sekaligus
@@ -158,19 +231,12 @@ class AdminSetupService {
     int skipped = 0;
 
     for (var adminData in admins) {
-      // Cek apakah sudah ada
-      final exists = await _isUserExists(adminData.email);
-      if (exists) {
-        print('⏭️  ${adminData.email} sudah ada, skip.');
-        skipped++;
-        continue;
-      }
-
-      // Buat admin baru
-      final success = await _createAdmin(adminData);
+      // Gunakan method baru
+      final success = await createAdminWithAuth(adminData);
       if (success) {
-        print('✅ Created: ${adminData.email}');
         created++;
+      } else {
+        skipped++;
       }
     }
 
@@ -218,3 +284,42 @@ Future<void> createDemoAdmins() async {
   final service = AdminSetupService();
   await service.createMultipleAdmins(demoAdmins);
 }
+
+/// Helper untuk membuat admin2@jawara.com
+Future<void> createAdmin2() async {
+  print('========================================');
+  print('🔧 MEMBUAT ADMIN2@JAWARA.COM');
+  print('========================================\n');
+
+  final service = AdminSetupService();
+
+  final admin2 = AdminUserData(
+    email: 'admin2@jawara.com',
+    password: 'admin123',
+    nama: 'Admin 2 Jawara',
+    nik: '3201234567890123',
+    jenisKelamin: 'Laki-laki',
+    noTelepon: '081234567899',
+    alamat: 'Jl. Admin 2 No. 123',
+  );
+
+  final success = await service.createAdminWithAuth(admin2);
+
+  if (success) {
+    print('\n========================================');
+    print('✅ ADMIN2 BERHASIL DIBUAT!');
+    print('========================================');
+    print('📧 Email:    admin2@jawara.com');
+    print('🔑 Password: admin123');
+    print('========================================\n');
+  } else {
+    print('\n========================================');
+    print('⚠️  ADMIN2 SUDAH ADA');
+    print('========================================');
+    print('Gunakan kredensial berikut untuk login:');
+    print('📧 Email:    admin2@jawara.com');
+    print('🔑 Password: admin123');
+    print('========================================\n');
+  }
+}
+
