@@ -59,7 +59,6 @@ async def recognize_text(
             bbox = detection[0]  # Bounding box coordinates
             text_info = detection[1]  # (text, confidence)
 
-            print(detection)
             results.append(
                 OCRResult(text=text_info[0], confidence=float(text_info[1]), bbox=bbox)
             )

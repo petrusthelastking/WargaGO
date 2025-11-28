@@ -9,7 +9,10 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import '../models/kyc_document_model.dart';
+import 'package:jawara/core/enums/kyc_enum.dart';
+import 'package:jawara/core/models/KYC/ktp_model.dart';
+import 'package:jawara/core/models/OCR/ocr_response.dart';
+import '../models/KYC/kyc_document_model.dart';
 import 'azure_blob_storage_service.dart';
 import 'ocr_service.dart';
 
@@ -58,40 +61,27 @@ class KYCService {
   }) async {
     try {
       if (kDebugMode) {
-        print('📤 Uploading KYC document via API...');
+        print('📤 Processing KYC document via API...');
         print('Document Type: $documentType');
       }
 
       // Process OCR if enabled
-      OCRResult? ocrResult;
+      List<OcrResult> ocrResults = List.empty();
       if (enableOCR) {
         if (kDebugMode) print('🔍 Processing OCR...');
-
-        // OCRService.processImage automatically detects document type (KTP/KK)
-        // and uses appropriate extraction strategy
-        ocrResult = await _ocrService.processImage(file);
-
-        if (ocrResult != null) {
-          if (kDebugMode) {
-            print(
-              '✅ OCR completed - NIK: ${ocrResult.nik}, Nama: ${ocrResult.nama}',
-            );
-            // Check detected document type
-            final detectedType = ocrResult.additionalFields?['document_type'];
-            if (detectedType != null) {
-              print('📄 Detected document type: $detectedType');
-            }
-          }
-        } else {
-          if (kDebugMode) print('⚠️ OCR returned null result');
+        final ocrResponse = await _ocrService.recognizeText(file);
+        ocrResults = ocrResponse.results;
+        if (ocrResults.length < 3) {
+          throw Exception('OCR Is not in target document type');
         }
       }
 
       final docTypeStr = KYCDocumentModel.documentTypeToString(documentType);
-
       final blobName = customBlobName ?? 'kyc_$docTypeStr';
-
       if (kDebugMode) {
+        ocrResults.forEach((result) {
+          print(result.text);
+        });
         print('📝 Blob name: $blobName');
       }
 
@@ -99,37 +89,30 @@ class KYCService {
         file: file,
         customFileName: blobName,
       ))?.blobUrl;
-
       if (result == null) {
         throw Exception('Upload failed - no result returned');
       }
-
-      // Extract blob path dari result
-      // Result bisa berupa URL atau path
-      String finalBlobName;
-
-      if (result.startsWith('http')) {
-        // Jika result adalah URL, extract path-nya
-        final uri = Uri.parse(result);
-        finalBlobName = uri.pathSegments.last;
-      } else {
-        // Jika result sudah berupa path
-        finalBlobName = blobName;
-      }
-
       if (kDebugMode) {
         print('✅ File uploaded successfully');
-        print('Blob Name: $finalBlobName');
+        print('Blob Name: $blobName');
+      }
+
+      final ktp = KTPModel.fromOCR(ocrResults);
+      if (kDebugMode) {
+        print('✅ KTP extracted successfully');
+        print(ktp.toMap());
       }
 
       // Create document record in Firestore dengan storage path (permanent)
       final kycDoc = KYCDocumentModel(
         userId: userId,
         documentType: documentType,
-        blobName: finalBlobName, // Simpan blob name
+        blobName: blobName, // Simpan blob name
         uploadedAt: DateTime.now(),
-        ocrResult: ocrResult,
+        ktpModel: ktp,
       );
+
+      print(kycDoc.toMap());
 
       final docRef = await _kycCollection.add(kycDoc.toMap());
 
