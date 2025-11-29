@@ -174,9 +174,14 @@ class KYCService {
 
   // Get specific document by type for a user
   Future<KYCDocumentModel?> getUserDocumentByType({
-    required String userId,
+    String? userId,
     required KYCDocumentType documentType,
   }) async {
+    if (userId == null) {
+      final user = FirebaseAuth.instance.currentUser!;
+      userId = user.uid;
+    }
+
     try {
       final snapshot = await _kycCollection
           .where('userId', isEqualTo: userId)
