@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:jawara/core/enums/kyc_enum.dart';
-import 'package:jawara/core/models/KYC/face_detection.dart';
+import 'package:jawara/core/models/KYC/kk_model.dart';
 import 'package:jawara/core/models/KYC/ktp_model.dart';
 
 class KYCDocumentModel {
@@ -16,7 +16,8 @@ class KYCDocumentModel {
   final DateTime? verifiedAt;
   final String? verifiedBy; // Admin ID who verified
   final KTPModel? ktpModel;
-  final FaceDetectionResult? faceDetection;
+  final KKModel? kkModel;
+  // final FaceDetectionResult? faceDetection;
   final Map<String, dynamic>? additionalData;
 
   KYCDocumentModel({
@@ -30,7 +31,8 @@ class KYCDocumentModel {
     this.verifiedAt,
     this.verifiedBy,
     this.ktpModel,
-    this.faceDetection,
+    this.kkModel,
+    // this.faceDetection,
     this.additionalData,
   });
 
@@ -40,14 +42,11 @@ class KYCDocumentModel {
   }
 
   factory KYCDocumentModel.fromMap(Map<String, dynamic> map, String id) {
-    final blobName = map['blobName'];
-
     return KYCDocumentModel(
       id: id,
       userId: map['userId'] ?? '',
       documentType: documentTypeFromString(map['documentType'] ?? 'ktp'),
-      // storagePath: storagePath,
-      blobName: blobName,
+      blobName: map['blobName'],
       status: statusFromString(map['status'] ?? 'pending'),
       rejectionReason: map['rejectionReason'],
       uploadedAt: (map['uploadedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -56,16 +55,17 @@ class KYCDocumentModel {
       ktpModel: map['ktpModel'] != null
           ? KTPModel.fromMap(map['ktpModel'])
           : null,
-      faceDetection: map['faceDetection'] != null
-          ? FaceDetectionResult.fromMap(map['faceDetection'])
-          : null,
+      kkModel: map['kkModel'] != null ? KKModel.fromMap(map['kkModel']) : null,
+      // faceDetection: map['faceDetection'] != null
+      //     ? FaceDetectionResult.fromMap(map['faceDetection'])
+      //     : null,
       additionalData: map['additionalData'],
     );
   }
 
   // Convert to Map - hanya simpan storagePath & blobName
   Map<String, dynamic> toMap() {
-    return {
+    final value = {
       'userId': userId,
       'documentType': documentTypeToString(documentType),
       'blobName': blobName,
@@ -74,10 +74,16 @@ class KYCDocumentModel {
       'uploadedAt': Timestamp.fromDate(uploadedAt),
       'verifiedAt': verifiedAt != null ? Timestamp.fromDate(verifiedAt!) : null,
       'verifiedBy': verifiedBy,
-      'ktpModel': ktpModel?.toMap(),
-      'faceDetection': faceDetection?.toMap(),
+      // 'faceDetection': faceDetection?.toMap(),
       'additionalData': additionalData,
     };
+    if (documentType == KYCDocumentType.ktp) {
+      value['ktpModel'] = ktpModel?.toMap();
+    }
+    if (documentType == KYCDocumentType.kk) {
+      value['kkModel'] = kkModel?.toMap();
+    }
+    return value;
   }
 
   // Helper methods for enum conversion
@@ -141,37 +147,5 @@ class KYCDocumentModel {
       case KYCDocumentType.akteKelahiran:
         return 'Akte Kelahiran';
     }
-  }
-
-  // Copy with method
-  KYCDocumentModel copyWith({
-    String? id,
-    String? userId,
-    KYCDocumentType? documentType,
-    String? blobName,
-    KYCStatus? status,
-    String? rejectionReason,
-    DateTime? uploadedAt,
-    DateTime? verifiedAt,
-    String? verifiedBy,
-    KTPModel? ktpModel,
-    FaceDetectionResult? faceDetection,
-    Map<String, dynamic>? additionalData,
-  }) {
-    return KYCDocumentModel(
-      id: id ?? this.id,
-      userId: userId ?? this.userId,
-      documentType: documentType ?? this.documentType,
-      // storagePath: storagePath ?? this.storagePath,
-      blobName: blobName ?? this.blobName,
-      status: status ?? this.status,
-      rejectionReason: rejectionReason ?? this.rejectionReason,
-      uploadedAt: uploadedAt ?? this.uploadedAt,
-      verifiedAt: verifiedAt ?? this.verifiedAt,
-      verifiedBy: verifiedBy ?? this.verifiedBy,
-      ktpModel: ktpModel ?? ktpModel,
-      faceDetection: faceDetection ?? this.faceDetection,
-      additionalData: additionalData ?? this.additionalData,
-    );
   }
 }

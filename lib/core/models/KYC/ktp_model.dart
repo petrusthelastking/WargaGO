@@ -6,6 +6,11 @@ class KTPModel {
   final String? tempatLahir;
   final String? tanggalLahir;
   final String? alamat;
+  final String? jenisKelamin;
+  final String? agama;
+  final String? pekerjaan;
+  final String? statusPerkawinan;
+  final String? kewarganegaraan;
 
   KTPModel({
     this.nik,
@@ -13,6 +18,11 @@ class KTPModel {
     this.tempatLahir,
     this.tanggalLahir,
     this.alamat,
+    this.jenisKelamin,
+    this.agama,
+    this.pekerjaan,
+    this.statusPerkawinan,
+    this.kewarganegaraan,
   });
 
   factory KTPModel.fromMap(Map<String, dynamic> map) {
@@ -22,6 +32,11 @@ class KTPModel {
       tempatLahir: map['tempatLahir'],
       tanggalLahir: map['tanggalLahir'],
       alamat: map['alamat'],
+      jenisKelamin: map['jenisKelamin'],
+      agama: map['agama'],
+      pekerjaan: map['pekerjaan'],
+      statusPerkawinan: map['statusPerkawinan'],
+      kewarganegaraan: map['kewarganegaraan'],
     );
   }
 
@@ -31,9 +46,22 @@ class KTPModel {
     String? tempatLahir;
     String? tanggalLahir;
     String? alamat;
+    String? jenisKelamin;
+    String? agama;
+    String? pekerjaan;
+    String? statusPerkawinan;
+    String? kewarganegaraan;
 
     // Helper function to find value based on bbox proximity
     String? findValueByBbox(OcrResult label, List<OcrResult> results) {
+      final textLabel = label.text.toUpperCase();
+      if (textLabel.contains(':')) {
+        final parts = textLabel.split(':');
+        if (parts.last.length > 2) {
+          return parts.last.trim();
+        }
+      }
+
       final labelY = label.bbox[0][1]; // Y coordinate of label
       final labelRightX = label.bbox[1][0]; // Right X coordinate of label
 
@@ -47,7 +75,7 @@ class KTPModel {
         // Check if on same line (Y coordinate difference < 20 pixels)
         // and to the right of the label
         if ((resultY - labelY).abs() < 20 && resultX > labelRightX) {
-          return result.text;
+          return result.text.replaceAll(':', '').trim();
         }
       }
       return null;
@@ -78,6 +106,17 @@ class KTPModel {
         }
       } else if (text == 'ALAMAT') {
         alamat = findValueByBbox(result, ocrResults);
+      } else if (text.contains('KELAMIN') || text.contains('JENIS KELAMIN')) {
+        jenisKelamin = findValueByBbox(result, ocrResults);
+      } else if (text.contains('AGAMA')) {
+        agama = findValueByBbox(result, ocrResults);
+      } else if (text.contains('PEKERJAAN')) {
+        pekerjaan = findValueByBbox(result, ocrResults);
+      } else if (text.contains('STATUS PERKAWINAN') ||
+          text.contains('PERKAWINAN')) {
+        statusPerkawinan = findValueByBbox(result, ocrResults);
+      } else if (text.contains('KEWARGANEGARAAN')) {
+        kewarganegaraan = findValueByBbox(result, ocrResults);
       }
     }
 
@@ -87,6 +126,11 @@ class KTPModel {
       tempatLahir: tempatLahir,
       tanggalLahir: tanggalLahir,
       alamat: alamat,
+      jenisKelamin: jenisKelamin,
+      agama: agama,
+      pekerjaan: pekerjaan,
+      statusPerkawinan: statusPerkawinan,
+      kewarganegaraan: kewarganegaraan,
     );
   }
 
@@ -97,6 +141,11 @@ class KTPModel {
       'tempatLahir': tempatLahir,
       'tanggalLahir': tanggalLahir,
       'alamat': alamat,
+      'jenisKelamin': jenisKelamin,
+      'agama': agama,
+      'pekerjaan': pekerjaan,
+      'statusPerkawinan': statusPerkawinan,
+      'kewarganegaraan': kewarganegaraan,
     };
   }
 }
