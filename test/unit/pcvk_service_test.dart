@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:jawara/core/enums/predict_class_enum.dart';
 import 'package:jawara/core/models/PCVK/batch_predict_response.dart';
 import 'package:jawara/core/models/PCVK/health_response.dart';
 import 'package:jawara/core/models/PCVK/models_response.dart';
@@ -264,6 +265,8 @@ void main() async {
 
         // Assert
         expect(result, isA<PredictModelResponse>());
+        expect(result.predictedClass, PredictClass.sayurAkar);
+        expect(result.confidence, 0.9371846914291382);
         expect(result.toJson(), {
           "filename": "test_image.jpg",
           "predicted_class": "Sayur Akar",
@@ -279,6 +282,7 @@ void main() async {
           "segmentation_used": true,
           "segmentation_method": "u2netp",
           "apply_brightness_contrast": true,
+          "prediction_time_ms": 150.5,
         });
 
         verify(mockClient.send(any)).called(1);
@@ -394,7 +398,7 @@ void main() async {
           expect(result.predictions.length, 2);
 
           // First result
-          expect(result.predictions[0].predictedClass, 'Sayur Akar');
+          expect(result.predictions[0].predictedClass, PredictClass.sayurAkar);
           expect(result.predictions[0].confidence, 0.9439828395843506);
           expect(
             result.predictions[0].allConfidences['Sayur Akar'],
@@ -405,7 +409,7 @@ void main() async {
           expect(result.predictions[0].error, null);
 
           // Second result
-          expect(result.predictions[1].predictedClass, 'Sayur Buah');
+          expect(result.predictions[1].predictedClass, PredictClass.sayurBuah);
           expect(result.predictions[1].confidence, 0.7061872482299805);
           expect(
             result.predictions[1].allConfidences['Sayur Buah'],
@@ -441,7 +445,7 @@ void main() async {
         expect(result.predictions.length, 2);
 
         // First result
-        expect(result.predictions[0].predictedClass, 'Sayur Akar');
+        expect(result.predictions[0].predictedClass, PredictClass.sayurAkar);
         expect(result.predictions[0].confidence, 0.9439828395843506);
         expect(
           result.predictions[0].allConfidences['Sayur Akar'],

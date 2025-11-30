@@ -7,6 +7,7 @@ import 'package:jawara/features/admin/data_warga/data_warga_main_page.dart';
 import 'package:jawara/features/admin/kelola_lapak/kelola_lapak_page.dart';
 import 'package:jawara/features/admin/keuangan/keuangan_page.dart';
 import 'package:jawara/features/common/auth/presentation/pages/warga/lupa_page.dart';
+import 'package:jawara/features/common/classification/classification_camera.dart';
 import 'package:jawara/features/common/splash/splash_page.dart';
 import 'package:jawara/features/common/onboarding/onboarding_page.dart';
 import 'package:jawara/features/common/pre_auth/pre_auth_page.dart';
@@ -55,6 +56,11 @@ class AppRouterConfig {
         name: 'preAuth',
         builder: (context, state) => const PreAuthPage(),
       ),
+      GoRoute(
+        path: AppRoutes.classificationCamera,
+        name: 'classificationCamera',
+        builder: (context, state) => const ClassificationCameraPage(),
+      ),
 
       // ========== AUTH ROUTES ==========
       GoRoute(
@@ -85,6 +91,21 @@ class AppRouterConfig {
         path: AppRoutes.wargaKYC,
         name: 'wargaKYC',
         builder: (context, state) => const KYCUploadPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.wargaClassificationCamera,
+        name: 'wargaClassificationCamera',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: WargaAppBottomNavigation(child: ClassificationCameraPage()),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: Tween<double>(begin: 1.0, end: 1.0).animate(animation),
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 1),
+        ),
       ),
 
       // ========== STATUS ROUTES ==========
@@ -196,7 +217,6 @@ class AppRouterConfig {
                 path: AppRoutes.wargaItemDetail,
                 name: 'wargaItemDetail',
                 builder: (context, state) {
-                  print(state.extra);
                   final extras = Map<String, dynamic>.from(state.extra as Map);
                   return ProductDetailPage(
                     productName: extras['productName'],
