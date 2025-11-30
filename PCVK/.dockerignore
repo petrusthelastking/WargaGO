@@ -36,7 +36,6 @@ docs/
 # Training runs
 runs/
 runs_test_va/
-models/
 notebook/
 
 
