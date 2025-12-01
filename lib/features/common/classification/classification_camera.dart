@@ -7,13 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:wargago/core/enums/pcvk_modeltype.dart';
-import 'package:wargago/core/enums/predict_class_enum.dart';
 import 'package:wargago/core/models/PCVK/predict_response.dart';
 import 'package:wargago/core/models/PCVK/websocket_config.dart';
 import 'package:wargago/core/services/pcvk_service.dart';
 import 'package:wargago/core/services/pcvk_stream_service.dart';
 import 'package:wargago/features/common/classification/widgets/inkwell_iconbutton.dart';
 import 'package:wargago/features/common/classification/widgets/white_button.dart';
+import 'package:wargago/features/common/classification/utils/veggie_rotation_manager.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:remixicon/remixicon.dart';
 
@@ -38,6 +38,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
 
   late final PcvkService _pcvkService;
   late final PCVKStreamService _pcvkStreamService;
+  late final VeggieRotationManager _veggieRotationManager;
 
   Future<void> _initializeCameras() async {
     try {
@@ -62,7 +63,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
             segmentationMethod: result.segmentationMethod ?? 'none',
             predictionTimeMs: result.predictionTimeMs,
           );
-          _startVeggieRotation();
+          _veggieRotationManager.startRotation(_result!.predictedClass);
           setState(() {});
         },
       );
@@ -91,11 +92,16 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
     super.initState();
     _imagePicker = ImagePicker();
     _pcvkService = PcvkService();
+    _veggieRotationManager = VeggieRotationManager(
+      onUpdate: () {
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   @override
   void dispose() {
-    _veggieTimer?.cancel();
+    _veggieRotationManager.dispose();
     _cameraController?.dispose();
     _pcvkStreamService.dispose(disploseCamera: false);
     super.dispose();
@@ -224,7 +230,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
       modelType: _useEfficient! ? 'efficientnetv2' : 'mlpv2_auto-clahe',
     );
 
-    _startVeggieRotation();
+    _veggieRotationManager.startRotation(_result!.predictedClass);
 
     setState(() => _isProcessing = false);
   }
@@ -244,39 +250,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
     setState(() {});
   }
 
-  List<String> _vegetables = ['🍅', '🌶️', '🥕', '🥬', '🧄', '🧅', '🥒'];
-  int _currentVeggieIndex = 0;
-  Timer? _veggieTimer;
-
-  void _startVeggieRotation() {
-    switch (_result!.predictedClass) {
-      case PredictClass.sayurAkar:
-        _vegetables = ['🥕', '🥔'];
-        break;
-      case PredictClass.sayurBuah:
-        _vegetables = ['🫑', "🍅", '🥒', "🎃", '🥭'];
-        break;
-      case PredictClass.sayurBunga:
-        _vegetables = ['🥦'];
-        break;
-      case PredictClass.sayurDaun:
-        _vegetables = ['🥬'];
-      default:
-    }
-    _veggieTimer?.cancel();
-    _currentVeggieIndex = _currentVeggieIndex >= _vegetables.length
-        ? 0
-        : _currentVeggieIndex;
-    _veggieTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      if (mounted) {
-        setState(() {
-          _currentVeggieIndex = (_currentVeggieIndex + 1) % _vegetables.length;
-        });
-      }
-    });
-  }
-
-  String get _currentVeggie => _vegetables[_currentVeggieIndex];
+  String get _currentVeggie => _veggieRotationManager.currentVeggie;
 
   @override
   Widget build(BuildContext context) {
