@@ -3,7 +3,11 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class UrlPCVKAPI {
   UrlPCVKAPI._();
 
-  static String get baseUrl => dotenv.maybeGet('PCVK_API_URL') ?? '';
+  static String get baseUrlEnv => dotenv.maybeGet('PCVK_API_URL') ?? '';
+  static String _baseUrl = baseUrlEnv;
+  static String get baseUrl => _baseUrl;
+  static void setBaseUrl(String url) => _baseUrl = url;
+
   static bool get isSSL =>
       (dotenv.maybeGet('PCVK_API_HTTPS') ?? 'true') == 'true';
 
