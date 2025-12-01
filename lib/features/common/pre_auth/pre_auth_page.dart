@@ -223,7 +223,7 @@ class _PreAuthPageState extends State<PreAuthPage>
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.white,
         systemNavigationBarIconBrightness: Brightness.dark,
         systemNavigationBarDividerColor: Colors.transparent,
       ),
@@ -281,56 +281,80 @@ class _PreAuthPageState extends State<PreAuthPage>
     super.dispose();
   }
 
+  double? _actionButtonHeight;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _kBackground,
-      body: SafeArea(
-        child: AnimatedBuilder(
-          animation: Listenable.merge([_backgroundProgress, _fadeAnimation]),
-          builder: (context, _) {
-            return Stack(
-              children: [
-                // Modern Gradient Background
-                _ModernGradientBackground(progress: _backgroundProgress.value),
+      body: AnimatedBuilder(
+        animation: Listenable.merge([_backgroundProgress, _fadeAnimation]),
+        builder: (context, _) {
+          return Stack(
+            children: [
+              // Modern Gradient Background
+              _ModernGradientBackground(progress: _backgroundProgress.value),
 
-                // Minimal Floating Particles
-                _MinimalParticles(progress: _backgroundProgress.value),
+              // Minimal Floating Particles
+              _MinimalParticles(progress: _backgroundProgress.value),
 
-                // Main Content with Fade & Slide Animation
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+              // Main Content with Fade & Slide Animation
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Container(
+                    height: MediaQuery.of(context).size.height,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: SingleChildScrollView(
+                      reverse: true,
                       child: Column(
                         children: [
-                          const Spacer(flex: 2),
+                          // const Spacer(flex: 2),
 
                           // Hero Logo Section
-                          _buildHeroSection(),
+                          SafeArea(child: _buildHeroSection()),
 
                           const SizedBox(height: 60),
 
                           // Glassmorphism Content Card
                           _buildContentCard(context),
-
-                          const Spacer(flex: 3),
-
-                          // Modern Action Buttons
-                          _buildActionButtons(context),
-
-                          const SizedBox(height: 32),
+                          SizedBox(
+                            height:
+                                (_actionButtonHeight ??
+                                    MediaQuery.of(context).size.height * 0.2) *
+                                1.5,
+                          ),
+                          // const Spacer(flex: 5),
                         ],
                       ),
                     ),
                   ),
                 ),
-                Align(
+              ),
+
+              // Modern Action Buttons
+              Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _MeasureSizeWidget(
+                    onChange: (value) => _actionButtonHeight = value.height,
+                    child: SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: _buildActionButtons(context),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
+
+              SafeArea(
+                child: Align(
                   alignment: AlignmentGeometry.topRight,
                   child: Padding(
-                    padding: const EdgeInsets.all(4.0),
+                    padding: const EdgeInsets.all(8.0),
                     child: InkWellIconButton(
                       onTap: _handleInstanceApi,
                       icon: Icon(RemixIcons.instance_line),
@@ -338,10 +362,10 @@ class _PreAuthPageState extends State<PreAuthPage>
                     ),
                   ),
                 ),
-              ],
-            );
-          },
-        ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -723,4 +747,44 @@ class _ParticlesPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ParticlesPainter oldDelegate) =>
       oldDelegate.progress != progress || oldDelegate.color != color;
+}
+
+// Widget to measure the actual size of a child widget
+class _MeasureSizeWidget extends StatefulWidget {
+  const _MeasureSizeWidget({required this.onChange, required this.child});
+
+  final ValueChanged<Size> onChange;
+  final Widget child;
+
+  @override
+  State<_MeasureSizeWidget> createState() => _MeasureSizeWidgetState();
+}
+
+class _MeasureSizeWidgetState extends State<_MeasureSizeWidget> {
+  final GlobalKey _key = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _notifySize());
+  }
+
+  @override
+  void didUpdateWidget(_MeasureSizeWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _notifySize());
+  }
+
+  void _notifySize() {
+    if (!mounted) return;
+    final renderBox = _key.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      widget.onChange(renderBox.size);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(key: _key, child: widget.child);
+  }
 }
