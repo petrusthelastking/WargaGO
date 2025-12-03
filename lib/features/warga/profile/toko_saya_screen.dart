@@ -56,10 +56,13 @@ class _TokoSayaScreenState extends State<TokoSayaScreen> {
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 40,
-                  backgroundImage: NetworkImage(
-                    'https://i.pravatar.cc/300?img=68',
+                  backgroundColor: Colors.blue[50],
+                  child: Icon(
+                    Icons.store,
+                    size: 40,
+                    color: Colors.blue[700],
                   ),
                 ),
                 const SizedBox(width: 16),
