@@ -22,7 +22,7 @@ class KelolaPenggunaPage extends StatefulWidget {
 
 class _KelolaPenggunaPageState extends State<KelolaPenggunaPage> {
   String _selectedFilter = 'Semua';
-  final List<String> _filterOptions = ['Semua', 'Admin', 'User', 'Pending'];
+  final List<String> _filterOptions = ['Semua', 'Admin', 'Warga', 'Pending'];
   final UserRepository _userRepository = UserRepository();
   String _searchQuery = '';
 
@@ -250,8 +250,8 @@ class _KelolaPenggunaPageState extends State<KelolaPenggunaPage> {
       userStream = _userRepository.getAllUsers();
     } else if (_selectedFilter == 'Admin') {
       userStream = _userRepository.getUsersByRole('admin');
-    } else if (_selectedFilter == 'User') {
-      userStream = _userRepository.getUsersByRole('user');
+    } else if (_selectedFilter == 'Warga') {
+      userStream = _userRepository.getUsersByRole('warga');
     } else if (_selectedFilter == 'Pending') {
       userStream = _userRepository.getPendingUsers();
     } else {
@@ -341,6 +341,30 @@ class _KelolaPenggunaPageState extends State<KelolaPenggunaPage> {
 
         // Filter by search query
         List<UserModel> users = snapshot.data!;
+
+        // Debug: Print total users before filtering
+        print('🔍 Kelola Pengguna Debug:');
+        print('   Filter: $_selectedFilter');
+        print('   Total users from stream: ${users.length}');
+        for (var user in users) {
+          print('   - ${user.nama} (${user.email}) - Role: ${user.role} - Status: ${user.status}');
+        }
+
+        // Apply additional client-side filtering based on selected filter
+        if (_selectedFilter == 'Admin') {
+          users = users.where((user) => user.role.toLowerCase() == 'admin').toList();
+        } else if (_selectedFilter == 'Warga') {
+          users = users.where((user) => user.role.toLowerCase() == 'warga').toList();
+        } else if (_selectedFilter == 'Pending') {
+          users = users.where((user) {
+            final status = user.status.toLowerCase();
+            return status == 'pending'; // Only 'pending', NOT 'unverified'
+          }).toList();
+        }
+
+        print('   After filter: ${users.length} users');
+
+        // Apply search query filter
         if (_searchQuery.isNotEmpty) {
           users = users.where((user) {
             final nameLower = user.nama.toLowerCase();

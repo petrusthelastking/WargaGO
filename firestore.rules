@@ -72,7 +72,7 @@ service cloud.firestore {
                        'userId' in request.resource.data &&
                        request.auth.uid == request.resource.data.userId &&
                        'documentType' in request.resource.data &&
-                       'documentUrl' in request.resource.data &&
+                       'blobName' in request.resource.data &&
                        'status' in request.resource.data &&
                        request.resource.data.status == 'pending';
 

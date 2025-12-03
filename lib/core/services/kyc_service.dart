@@ -61,6 +61,9 @@ class KYCService {
     String? customBlobName,
   }) async {
     try {
+      // Ensure initialization is complete
+      await _doneFuture;
+
       if (kDebugMode) {
         print('📤 Processing KYC document via API...');
         print('Document Type: $documentType');
@@ -87,21 +90,26 @@ class KYCService {
       }
 
       final docTypeStr = KYCDocumentModel.documentTypeToString(documentType);
-      final blobName = customBlobName ?? 'kyc_$docTypeStr';
+      final customFileName = customBlobName ?? 'kyc_$docTypeStr';
       if (kDebugMode) {
-        print('📝 Blob name: $blobName');
+        print('📝 Custom file name: $customFileName');
       }
 
-      final result = (await _azureApiService.uploadImage(
+      final uploadResponse = await _azureApiService.uploadImage(
         file: file,
-        customFileName: blobName,
-      ))?.blobUrl;
-      if (result == null) {
+        customFileName: customFileName,
+      );
+
+      if (uploadResponse == null) {
         throw Exception('Upload failed - no result returned');
       }
+
+      // Use actual blob name from Azure response, not custom filename
+      final actualBlobName = uploadResponse.blobName;
+
       if (kDebugMode) {
         print('✅ File uploaded successfully');
-        print('Blob Name: $blobName');
+        print('Actual Blob Name: $actualBlobName');
       }
 
       late final KYCDocumentModel kycDoc;
@@ -114,7 +122,7 @@ class KYCService {
         kycDoc = KYCDocumentModel(
           userId: userId,
           documentType: documentType,
-          blobName: blobName,
+          blobName: actualBlobName,
           uploadedAt: DateTime.now(),
           ktpModel: ktp,
         );
@@ -128,9 +136,24 @@ class KYCService {
         kycDoc = KYCDocumentModel(
           userId: userId,
           documentType: documentType,
-          blobName: blobName,
+          blobName: actualBlobName,
           uploadedAt: DateTime.now(),
           kkModel: kk,
+        );
+      } else {
+        // For other document types (akteKelahiran, etc.) without OCR extraction
+        if (kDebugMode) {
+          print('✅ Document uploaded (no OCR extraction for this type)');
+        }
+
+        kycDoc = KYCDocumentModel(
+          userId: userId,
+          documentType: documentType,
+          blobName: actualBlobName,
+          uploadedAt: DateTime.now(),
+          additionalData: enableOCR && ocrResults.isNotEmpty
+              ? {'ocrResults': ocrResults.map((r) => r.toJson()).toList()}
+              : null,
         );
       }
 
@@ -139,8 +162,15 @@ class KYCService {
       }
       final docRef = await _kycCollection.add(kycDoc.toMap());
 
+      // Update user status to 'pending' after successful upload
+      await _firestore.collection('users').doc(userId).update({
+        'status': 'pending',
+        'updatedAt': Timestamp.now(),
+      });
+
       if (kDebugMode) {
         print('✅ KYC document record created with ID: ${docRef.id}');
+        print('✅ User status updated to pending');
       }
 
       return docRef.id;
@@ -243,6 +273,15 @@ class KYCService {
     required String adminId,
   }) async {
     try {
+      // Get document first to get user ID
+      final doc = await _kycCollection.doc(documentId).get();
+      if (!doc.exists) {
+        throw Exception('Document not found');
+      }
+
+      final kycDoc = KYCDocumentModel.fromFirestore(doc);
+
+      // Update KYC document status
       await _kycCollection.doc(documentId).update({
         'status': 'approved',
         'verifiedAt': Timestamp.now(),
@@ -250,8 +289,15 @@ class KYCService {
         'rejectionReason': null,
       });
 
+      // Update user status to 'approved'
+      await _firestore.collection('users').doc(kycDoc.userId).update({
+        'status': 'approved',
+        'updatedAt': Timestamp.now(),
+      });
+
       if (kDebugMode) {
         print('✅ Document approved: $documentId');
+        print('✅ User status updated to approved: ${kycDoc.userId}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -268,6 +314,15 @@ class KYCService {
     required String reason,
   }) async {
     try {
+      // Get document first to get user ID
+      final doc = await _kycCollection.doc(documentId).get();
+      if (!doc.exists) {
+        throw Exception('Document not found');
+      }
+
+      final kycDoc = KYCDocumentModel.fromFirestore(doc);
+
+      // Update KYC document status
       await _kycCollection.doc(documentId).update({
         'status': 'rejected',
         'verifiedAt': Timestamp.now(),
@@ -275,8 +330,15 @@ class KYCService {
         'rejectionReason': reason,
       });
 
+      // Update user status to 'rejected' (or 'unverified' to allow re-upload)
+      await _firestore.collection('users').doc(kycDoc.userId).update({
+        'status': 'unverified', // Set to unverified so user can re-upload
+        'updatedAt': Timestamp.now(),
+      });
+
       if (kDebugMode) {
         print('✅ Document rejected: $documentId');
+        print('✅ User status updated to unverified: ${kycDoc.userId}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -289,6 +351,9 @@ class KYCService {
   // Delete KYC document
   Future<void> deleteDocument(String documentId) async {
     try {
+      // Ensure initialization is complete
+      await _doneFuture;
+
       // Get document data first to delete from Azure
       final doc = await _kycCollection.doc(documentId).get();
       if (doc.exists) {
@@ -330,6 +395,9 @@ class KYCService {
   // URL akan fresh setiap kali dipanggil, tidak akan expired
   Future<String?> getDocumentUrl(String documentId) async {
     try {
+      // Ensure initialization is complete
+      await _doneFuture;
+
       final doc = await _kycCollection.doc(documentId).get();
       if (!doc.exists) {
         if (kDebugMode) print('❌ Document not found: $documentId');
@@ -338,17 +406,61 @@ class KYCService {
 
       final kycDoc = KYCDocumentModel.fromFirestore(doc);
 
-      // Generate fresh URL dari blob name
-      final url = await _azureApiService.getImages(
+      if (kDebugMode) {
+        print('🔍 Fetching URL for blob: ${kycDoc.blobName}');
+        print('   User ID: ${kycDoc.userId}');
+      }
+
+      // Strategy 1: Try with exact blob name first
+      var url = await _azureApiService.getImages(
+        uid: kycDoc.userId,
         filenamePrefix: kycDoc.blobName,
         isPrivate: true,
       );
 
       if (kDebugMode) {
-        print('✅ Generated fresh URL for: ${kycDoc.blobName}');
+        print('✅ API Response received (exact match)');
+        print('   Images count: ${url?.images.length ?? 0}');
       }
 
-      return url?.images.first.blobUrl;
+      // Strategy 2: If not found, try with filename only
+      if (url == null || url.images.isEmpty) {
+        String filenameOnly = kycDoc.blobName;
+        if (filenameOnly.contains('/')) {
+          filenameOnly = filenameOnly.split('/').last;
+        }
+        if (filenameOnly.contains('.')) {
+          filenameOnly = filenameOnly.split('.').first;
+        }
+
+        if (kDebugMode) {
+          print('🔄 Trying fallback search with: $filenameOnly');
+        }
+
+        url = await _azureApiService.getImages(
+          uid: kycDoc.userId,
+          filenamePrefix: filenameOnly,
+          isPrivate: true,
+        );
+
+        if (kDebugMode) {
+          print('✅ API Response received (fallback)');
+          print('   Images count: ${url?.images.length ?? 0}');
+        }
+      }
+
+      // Check if images list is not empty
+      if (url != null && url.images.isNotEmpty) {
+        if (kDebugMode) {
+          print('✅ Found image: ${url.images.first.blobName}');
+        }
+        return url.images.first.blobUrl;
+      } else {
+        if (kDebugMode) {
+          print('⚠️ No images found for blob: ${kycDoc.blobName}');
+        }
+        return null;
+      }
     } catch (e) {
       if (kDebugMode) {
         print('❌ Error generating document URL: $e');
@@ -360,17 +472,70 @@ class KYCService {
   // Get document URL by KYC document model
   Future<String?> getDocumentUrlFromModel(KYCDocumentModel kycDoc) async {
     try {
-      // Generate fresh URL dari blob name
-      final url = await _azureApiService.getImages(
+      // Ensure initialization is complete
+      await _doneFuture;
+
+      if (kDebugMode) {
+        print('🔍 Fetching URL for blob: ${kycDoc.blobName}');
+        print('   User ID: ${kycDoc.userId}');
+      }
+
+      // Strategy 1: Try with exact blob name first
+      var url = await _azureApiService.getImages(
+        uid: kycDoc.userId,
         filenamePrefix: kycDoc.blobName,
         isPrivate: true,
       );
 
       if (kDebugMode) {
-        print('✅ Generated fresh URL for: ${kycDoc.blobName}');
+        print('✅ API Response received (exact match)');
+        print('   Images count: ${url?.images.length ?? 0}');
       }
 
-      return url?.images.first.blobUrl;
+      // Strategy 2: If not found, try with filename only (remove user_id/ prefix if present)
+      if (url == null || url.images.isEmpty) {
+        // Extract filename from full path (e.g., "user_id/kyc_ktp.webp" -> "kyc_ktp")
+        String filenameOnly = kycDoc.blobName;
+        if (filenameOnly.contains('/')) {
+          filenameOnly = filenameOnly.split('/').last;
+        }
+        // Remove extension
+        if (filenameOnly.contains('.')) {
+          filenameOnly = filenameOnly.split('.').first;
+        }
+
+        if (kDebugMode) {
+          print('🔄 Trying fallback search with: $filenameOnly');
+        }
+
+        url = await _azureApiService.getImages(
+          uid: kycDoc.userId,
+          filenamePrefix: filenameOnly,
+          isPrivate: true,
+        );
+
+        if (kDebugMode) {
+          print('✅ API Response received (fallback)');
+          print('   Images count: ${url?.images.length ?? 0}');
+        }
+      }
+
+      if (url != null && url.images.isNotEmpty) {
+        if (kDebugMode) {
+          print('✅ Found image: ${url.images.first.blobName}');
+        }
+        return url.images.first.blobUrl;
+      } else {
+        if (kDebugMode) {
+          print('⚠️ No images found for blob: ${kycDoc.blobName}');
+          print('   This might mean:');
+          print('   1. File was deleted from Azure');
+          print('   2. Blob name mismatch');
+          print('   3. User ID mismatch');
+          print('   💡 Tip: Ask user to re-upload document');
+        }
+        return null;
+      }
     } catch (e) {
       if (kDebugMode) {
         print('❌ Error generating document URL: $e');
