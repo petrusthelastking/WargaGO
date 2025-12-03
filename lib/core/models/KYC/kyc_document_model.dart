@@ -46,7 +46,7 @@ class KYCDocumentModel {
       id: id,
       userId: map['userId'] ?? '',
       documentType: documentTypeFromString(map['documentType'] ?? 'ktp'),
-      blobName: map['blobName'],
+      blobName: map['blobName'] ?? '',
       status: statusFromString(map['status'] ?? 'pending'),
       rejectionReason: map['rejectionReason'],
       uploadedAt: (map['uploadedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),

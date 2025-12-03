@@ -5,6 +5,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -30,6 +31,12 @@ class WargaHomePage extends StatelessWidget {
         final userName = user?.nama ?? 'Warga';
         final userStatus = user?.status ?? 'unverified';
 
+        if (kDebugMode) {
+          print('🏠 WargaHomePage rebuild');
+          print('   User: $userName');
+          print('   Status: $userStatus');
+        }
+
         // Determine alert status
         // Status bisa: 'approved', 'unverified', 'pending', 'rejected'
         // - approved: KYC sudah di-approve admin, full access
@@ -39,6 +46,12 @@ class WargaHomePage extends StatelessWidget {
 
         final bool isApproved = userStatus == 'approved';
         final bool isPending = userStatus == 'pending';
+
+        if (kDebugMode) {
+          print('   isApproved: $isApproved');
+          print('   isPending: $isPending');
+          print('   Show KYC Alert: ${!isApproved}');
+        }
 
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FD),
@@ -55,7 +68,8 @@ class WargaHomePage extends StatelessWidget {
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () async {
-                      await Future.delayed(const Duration(seconds: 1));
+                      // Refresh user data from Firestore
+                      await authProvider.refreshUserData();
                     },
                     color: const Color(0xFF2F80ED),
                     child: SingleChildScrollView(

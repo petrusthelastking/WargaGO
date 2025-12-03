@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import 'package:wargago/core/models/user_model.dart';
 import 'package:wargago/core/services/firestore_service.dart';
 
@@ -9,18 +11,180 @@ class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
   final FirestoreService _firestoreService = FirestoreService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   UserModel? _userModel;
   bool _isLoading = false;
   String? _errorMessage;
   bool _isAuthenticated = false;
+  StreamSubscription<DocumentSnapshot>? _userSubscription;
+  StreamSubscription<User?>? _authStateSubscription;
 
   UserModel? get userModel => _userModel;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _isAuthenticated;
 
+  // Constructor - setup auth state listener
+  AuthProvider() {
+    _initAuthStateListener();
+  }
+
   Future<String?> getToken() async => await _auth.currentUser!.getIdToken();
+
+  // Initialize auth state listener
+  void _initAuthStateListener() {
+    if (kDebugMode) {
+      print('🔐 Initializing auth state listener...');
+    }
+
+    _authStateSubscription = _auth.authStateChanges().listen((User? user) async {
+      if (kDebugMode) {
+        print('🔐 Auth state changed');
+        print('   User: ${user?.uid}');
+        print('   Email: ${user?.email}');
+      }
+
+      if (user != null) {
+        // User is signed in
+        if (kDebugMode) {
+          print('✅ User is signed in, loading user data...');
+        }
+
+        try {
+          // Load user data from Firestore
+          var userModel = await _firestoreService.getUserById(user.uid);
+
+          if (userModel == null && user.email != null) {
+            // Fallback: try to find by email
+            userModel = await _firestoreService.getUserByEmail(user.email!);
+          }
+
+          if (userModel != null) {
+            _userModel = userModel;
+            _isAuthenticated = true;
+
+            // Start listening to user data changes
+            _startUserListener(userModel.id);
+
+            notifyListeners();
+
+            if (kDebugMode) {
+              print('✅ User data loaded on app start');
+              print('   Name: ${userModel.nama}');
+              print('   Status: ${userModel.status}');
+            }
+          } else {
+            if (kDebugMode) {
+              print('⚠️ User exists in Firebase Auth but not in Firestore');
+            }
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('❌ Error loading user data: $e');
+          }
+        }
+      } else {
+        // User is signed out
+        if (kDebugMode) {
+          print('🔓 User is signed out');
+        }
+        _stopUserListener();
+        _userModel = null;
+        _isAuthenticated = false;
+        notifyListeners();
+      }
+    });
+  }
+
+  // Start listening to user data changes
+  void _startUserListener(String userId) {
+    if (kDebugMode) {
+      print('👂 Starting real-time listener for user: $userId');
+    }
+
+    _userSubscription?.cancel();
+    _userSubscription = _firestore
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .listen(
+      (snapshot) {
+        if (kDebugMode) {
+          print('📡 Firestore snapshot received for user: $userId');
+          print('   Exists: ${snapshot.exists}');
+          print('   Has data: ${snapshot.data() != null}');
+        }
+
+        if (snapshot.exists && snapshot.data() != null) {
+          final userData = snapshot.data() as Map<String, dynamic>;
+          final updatedUser = UserModel.fromMap(userData, snapshot.id);
+
+          if (kDebugMode) {
+            print('🔄 User data updated from Firestore');
+            print('   Old status: ${_userModel?.status}');
+            print('   New status: ${updatedUser.status}');
+            print('   Status changed: ${_userModel?.status != updatedUser.status}');
+          }
+
+          _userModel = updatedUser;
+          notifyListeners();
+
+          if (kDebugMode) {
+            print('✅ notifyListeners() called - UI should update');
+          }
+        }
+      },
+      onError: (error) {
+        if (kDebugMode) {
+          print('❌ Error in user listener: $error');
+        }
+      },
+    );
+  }
+
+  // Stop listening to user data changes
+  void _stopUserListener() {
+    if (kDebugMode) {
+      print('🔇 Stopping user listener');
+    }
+    _userSubscription?.cancel();
+    _userSubscription = null;
+  }
+
+  // Manually refresh user data from Firestore
+  Future<void> refreshUserData() async {
+    if (_userModel == null) return;
+
+    try {
+      if (kDebugMode) {
+        print('🔄 Manually refreshing user data...');
+      }
+
+      final user = await _firestoreService.getUserById(_userModel!.id);
+
+      if (user != null) {
+        _userModel = user;
+        notifyListeners();
+
+        if (kDebugMode) {
+          print('✅ User data refreshed successfully');
+          print('   Status: ${user.status}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error refreshing user data: $e');
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _stopUserListener();
+    _authStateSubscription?.cancel();
+    super.dispose();
+  }
 
   // Sign in with email and password using Firebase Auth
   Future<bool> signIn({required String email, required String password}) async {
@@ -156,6 +320,10 @@ class AuthProvider with ChangeNotifier {
       _userModel = user;
       _isAuthenticated = true;
       _isLoading = false;
+
+      // Start listening to user data changes
+      _startUserListener(user.id);
+
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
@@ -349,6 +517,7 @@ class AuthProvider with ChangeNotifier {
 
   // Sign out from Firebase Auth
   Future<void> signOut() async {
+    _stopUserListener(); // Stop listening to user changes
     await _auth.signOut();
     await _googleSignIn.signOut();
     _userModel = null;
@@ -501,6 +670,10 @@ class AuthProvider with ChangeNotifier {
       _userModel = user;
       _isAuthenticated = true;
       _isLoading = false;
+
+      // Start listening to user data changes
+      _startUserListener(user.id);
+
       notifyListeners();
       return true;
     } on PlatformException catch (e, stackTrace) {

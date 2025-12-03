@@ -8,12 +8,14 @@ class KYCDocumentPreview extends StatefulWidget {
   final KYCDocumentModel document;
   final VoidCallback? onTap;
   final double height;
+  final KYCService? kycService; // Optional: use existing service
 
   const KYCDocumentPreview({
     super.key,
     required this.document,
     this.onTap,
     this.height = 200,
+    this.kycService,
   });
 
   @override
@@ -21,7 +23,7 @@ class KYCDocumentPreview extends StatefulWidget {
 }
 
 class _KYCDocumentPreviewState extends State<KYCDocumentPreview> {
-  final KYCService _kycService = KYCService();
+  late final KYCService _kycService;
   String? _documentUrl;
   bool _isLoading = true;
   String? _error;
@@ -29,6 +31,8 @@ class _KYCDocumentPreviewState extends State<KYCDocumentPreview> {
   @override
   void initState() {
     super.initState();
+    // Use provided service or create new one
+    _kycService = widget.kycService ?? KYCService();
     _loadDocumentUrl();
   }
 
@@ -65,26 +69,20 @@ class _KYCDocumentPreviewState extends State<KYCDocumentPreview> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: _kycService.initializationDone,
-      builder: (context, snapshot) =>
-          (snapshot.connectionState == ConnectionState.waiting)
-          ? const CircularProgressIndicator()
-          : InkWell(
-              onTap: () {
-                if (widget.onTap != null && _documentUrl != null) {
-                  widget.onTap!();
-                }
-              },
-              child: Container(
-                height: widget.height,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: _buildContent(),
-              ),
-            ),
+    return InkWell(
+      onTap: () {
+        if (widget.onTap != null && _documentUrl != null) {
+          widget.onTap!();
+        }
+      },
+      child: Container(
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: _buildContent(),
+      ),
     );
   }
 
@@ -92,11 +90,12 @@ class _KYCDocumentPreviewState extends State<KYCDocumentPreview> {
     if (_isLoading) {
       return const Center(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 8),
-            Text('Loading document...'),
+            Text('Loading...', style: TextStyle(fontSize: 12)),
           ],
         ),
       );
@@ -105,15 +104,20 @@ class _KYCDocumentPreviewState extends State<KYCDocumentPreview> {
     if (_error != null || _documentUrl == null) {
       return Center(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error, size: 48, color: Colors.red),
-            const SizedBox(height: 8),
-            const Text('Failed to load document'),
-            const SizedBox(height: 8),
+            Icon(Icons.error, size: 32, color: Colors.red),
+            SizedBox(height: 4),
+            Text('Failed to load', style: TextStyle(fontSize: 12)),
+            SizedBox(height: 4),
             ElevatedButton(
               onPressed: _loadDocumentUrl,
-              child: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                minimumSize: Size(60, 30),
+              ),
+              child: const Text('Retry', style: TextStyle(fontSize: 11)),
             ),
           ],
         ),
@@ -123,12 +127,13 @@ class _KYCDocumentPreviewState extends State<KYCDocumentPreview> {
     if (_isPdf) {
       return const Center(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.picture_as_pdf, size: 48),
-            SizedBox(height: 8),
-            Text('PDF Document'),
-            Text('Tap to view'),
+            Icon(Icons.picture_as_pdf, size: 32),
+            SizedBox(height: 4),
+            Text('PDF', style: TextStyle(fontSize: 12)),
+            Text('Tap to view', style: TextStyle(fontSize: 10)),
           ],
         ),
       );
@@ -142,15 +147,24 @@ class _KYCDocumentPreviewState extends State<KYCDocumentPreview> {
         errorBuilder: (context, error, stackTrace) {
           return Center(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error, size: 48, color: Colors.red),
-                const SizedBox(height: 8),
-                Text('Error: $error'),
-                const SizedBox(height: 8),
+                Icon(Icons.error, size: 32, color: Colors.red),
+                SizedBox(height: 4),
+                Text(
+                  'Load failed',
+                  style: TextStyle(fontSize: 11),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 4),
                 ElevatedButton(
                   onPressed: _loadDocumentUrl,
-                  child: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    minimumSize: Size(60, 30),
+                  ),
+                  child: const Text('Retry', style: TextStyle(fontSize: 11)),
                 ),
               ],
             ),

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:wargago/core/widgets/admin_app_bottom_navigation.dart';
 import 'package:wargago/core/providers/warga_provider.dart';
 import 'package:wargago/core/providers/keluarga_provider.dart';
 import 'package:wargago/core/providers/rumah_provider.dart';
@@ -13,7 +11,6 @@ import 'data_mutasi/repositories/mutasi_repository.dart';
 import 'terima_warga/repositories/pending_warga_repository.dart';
 import 'kelola_pengguna/kelola_pengguna_page.dart';
 import 'terima_warga/terima_warga_page.dart';
-import 'package:wargago/features/admin/core_pages/kyc_verification_page.dart';
 
 class DataWargaMainPage extends StatefulWidget {
   final int initialIndex;
@@ -275,54 +272,6 @@ class _DataWargaMainPageState extends State<DataWargaMainPage>
                                     },
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Row 3: Verifikasi KYC
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: StreamBuilder<QuerySnapshot>(
-                                    stream: FirebaseFirestore.instance
-                                        .collection('kyc_documents')
-                                        .where('status', isEqualTo: 'pending')
-                                        .snapshots(),
-                                    builder: (context, snapshot) {
-                                      final pendingKYC = snapshot.hasData
-                                          ? snapshot.data!.docs.length
-                                          : 0;
-
-                                      return _buildHorizontalCard(
-                                        context,
-                                        title: 'Verifikasi KYC',
-                                        subtitle: 'Approve dokumen warga',
-                                        icon: Icons.verified_user_rounded,
-                                        gradientColors: const [
-                                          Color(0xFFFF9800),
-                                          Color(0xFFF57C00),
-                                        ],
-                                        total: pendingKYC.toString(),
-                                        label: 'Pending KYC',
-                                        trend: pendingKYC > 0
-                                            ? '${pendingKYC} Baru'
-                                            : 'Semua OK',
-                                        trendUp: pendingKYC == 0,
-                                        delay: 400,
-                                        onTap: () => Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                const KYCVerificationPage(),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                // Placeholder card atau card lain bisa ditambahkan di sini
-                                Expanded(child: Container()),
                               ],
                             ),
                             const SizedBox(height: 32),

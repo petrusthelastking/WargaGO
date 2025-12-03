@@ -253,6 +253,7 @@ class _KYCVerificationPageState extends State<KYCVerificationPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: KYCDocumentPreview(
               document: kycDoc,
+              kycService: _kycService, // Pass existing service
               height: 200,
               onTap: () async {
                 // Get fresh URL untuk view

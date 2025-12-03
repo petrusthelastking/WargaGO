@@ -46,11 +46,11 @@ class UserRepository {
     });
   }
 
-  /// Get pending users (unverified or pending)
+  /// Get pending users (only status 'pending', NOT 'unverified')
   Stream<List<UserModel>> getPendingUsers() {
     return _firestore
         .collection('users')
-        .where('status', whereIn: ['unverified', 'pending'])
+        .where('status', isEqualTo: 'pending')
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {

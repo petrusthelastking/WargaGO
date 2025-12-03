@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wargago/core/models/user_model.dart';
+import 'package:wargago/core/models/KYC/kyc_document_model.dart';
+import 'package:wargago/core/services/kyc_service.dart';
+import 'package:wargago/core/enums/kyc_enum.dart';
 import 'package:intl/intl.dart';
 
 import 'repositories/user_repository.dart';
@@ -24,6 +28,7 @@ class DetailPenggunaPage extends StatefulWidget {
 
 class _DetailPenggunaPageState extends State<DetailPenggunaPage> {
   final UserRepository _userRepository = UserRepository();
+  final KYCService _kycService = KYCService();
   bool _isLoading = false;
 
   @override
@@ -54,6 +59,11 @@ class _DetailPenggunaPageState extends State<DetailPenggunaPage> {
 
                   // Info Section
                   _buildInfoSection(),
+
+                  const SizedBox(height: 24),
+
+                  // KYC Documents Section (NEW!)
+                  _buildKYCDocumentsSection(),
 
                   const SizedBox(height: 24),
 
@@ -385,6 +395,673 @@ class _DetailPenggunaPageState extends State<DetailPenggunaPage> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // === KYC DOCUMENTS SECTION ===
+
+  Widget _buildKYCDocumentsSection() {
+    // Don't show KYC section for admin users
+    if (widget.user.role.toLowerCase() == 'admin') {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Dokumen KYC',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1F2937),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Stream KYC documents dari Firestore
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('kyc_documents')
+              .where('userId', isEqualTo: widget.user.id)
+              .orderBy('uploadedAt', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return _buildEmptyKYCCard('Error loading documents');
+            }
+
+            final documents = snapshot.data?.docs ?? [];
+
+            if (documents.isEmpty) {
+              return _buildEmptyKYCCard('Belum ada dokumen KYC yang diupload');
+            }
+
+            return Column(
+              children: documents.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final kycDoc = KYCDocumentModel.fromMap(data, doc.id);
+                return _buildKYCDocumentCard(kycDoc);
+              }).toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyKYCCard(String message) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey[300]!,
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.folder_open, color: Colors.grey[400], size: 32),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              message,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKYCDocumentCard(KYCDocumentModel kycDoc) {
+    Color statusColor = Colors.grey;
+    IconData statusIcon = Icons.info;
+    String statusText = 'Unknown';
+
+    switch (kycDoc.status) {
+      case KYCStatus.pending:
+        statusColor = const Color(0xFFFBBF24);
+        statusIcon = Icons.hourglass_empty;
+        statusText = 'Pending';
+        break;
+      case KYCStatus.approved:
+        statusColor = const Color(0xFF10B981);
+        statusIcon = Icons.check_circle;
+        statusText = 'Approved';
+        break;
+      case KYCStatus.rejected:
+        statusColor = const Color(0xFFEF4444);
+        statusIcon = Icons.cancel;
+        statusText = 'Rejected';
+        break;
+    }
+
+    String docTypeName = _getDocumentTypeName(kycDoc.documentType);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: statusColor.withValues(alpha: 0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: Document type + Status badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.description, color: const Color(0xFF2F80ED), size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        docTypeName,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1F2937),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: statusColor.withValues(alpha: 0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(statusIcon, color: statusColor, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      statusText,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Upload date
+          Row(
+            children: [
+              Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+              const SizedBox(width: 6),
+              Text(
+                'Uploaded: ${DateFormat('dd MMM yyyy, HH:mm').format(kycDoc.uploadedAt)}',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+
+          // Verified info (if applicable)
+          if (kycDoc.verifiedAt != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(Icons.verified, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 6),
+                Text(
+                  'Verified: ${DateFormat('dd MMM yyyy, HH:mm').format(kycDoc.verifiedAt!)}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          // Rejection reason (if rejected)
+          if (kycDoc.status == KYCStatus.rejected && kycDoc.rejectionReason != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline, color: Color(0xFFEF4444), size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Alasan Ditolak:',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFFEF4444),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          kycDoc.rejectionReason!,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: const Color(0xFFEF4444),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Action buttons (only for pending status)
+          if (kycDoc.status == KYCStatus.pending) ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _viewDocument(kycDoc),
+                    icon: const Icon(Icons.visibility, size: 18),
+                    label: const Text('Lihat'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF2F80ED),
+                      side: const BorderSide(color: Color(0xFF2F80ED)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _rejectKYCDocument(kycDoc),
+                    icon: const Icon(Icons.close, size: 18),
+                    label: const Text('Tolak'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEF4444),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _approveKYCDocument(kycDoc),
+                    icon: const Icon(Icons.check, size: 18),
+                    label: const Text('Setujui'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          // View button for approved/rejected
+          if (kycDoc.status != KYCStatus.pending) ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _viewDocument(kycDoc),
+                icon: const Icon(Icons.visibility, size: 18),
+                label: const Text('Lihat Dokumen'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF2F80ED),
+                  side: const BorderSide(color: Color(0xFF2F80ED)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _getDocumentTypeName(KYCDocumentType type) {
+    switch (type) {
+      case KYCDocumentType.ktp:
+        return 'KTP (Kartu Tanda Penduduk)';
+      case KYCDocumentType.kk:
+        return 'KK (Kartu Keluarga)';
+      case KYCDocumentType.akteKelahiran:
+        return 'Akte Kelahiran';
+    }
+  }
+
+  // === KYC ACTION METHODS ===
+
+  Future<void> _viewDocument(KYCDocumentModel kycDoc) async {
+    setState(() => _isLoading = true);
+
+    try {
+      // Get document URL from KYC service
+      final url = await _kycService.getDocumentUrlFromModel(kycDoc);
+
+      setState(() => _isLoading = false);
+
+      if (url == null || url.isEmpty) {
+        if (mounted) {
+          _showErrorSnackBar('Gagal memuat dokumen. File mungkin sudah dihapus.');
+        }
+        return;
+      }
+
+      // Show document in dialog
+      if (mounted) {
+        await showDialog(
+          context: context,
+          builder: (context) => _buildDocumentViewerDialog(kycDoc, url),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        _showErrorSnackBar('Error loading document: $e');
+      }
+    }
+  }
+
+  Widget _buildDocumentViewerDialog(KYCDocumentModel kycDoc, String imageUrl) {
+    final docTypeName = _getDocumentTypeName(kycDoc.documentType);
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(16),
+      child: Builder(
+        builder: (dialogContext) => Container(
+          constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF2F80ED), Color(0xFF1E6FD9)],
+                  ),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.description, color: Colors.white, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            docTypeName,
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.user.nama,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Image viewer
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Loading image...',
+                              style: GoogleFonts.poppins(
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error_outline,
+                                size: 64, color: Colors.red[300]),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Failed to load image',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'The image might be deleted or unavailable',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+
+            // Footer with info
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline,
+                          size: 16, color: Colors.grey[600]),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Pinch to zoom • Drag to pan',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.access_time,
+                          size: 16, color: Colors.grey[600]),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Uploaded: ${DateFormat('dd MMM yyyy, HH:mm').format(kycDoc.uploadedAt)}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        ), // Close Builder
+      ),
+    );
+  }
+
+  Future<void> _approveKYCDocument(KYCDocumentModel kycDoc) async {
+    final confirm = await _showConfirmDialog(
+      title: 'Setujui Dokumen KYC',
+      message: 'Apakah Anda yakin ingin menyetujui ${_getDocumentTypeName(kycDoc.documentType)}?\n\nUser akan otomatis ter-approve dan mendapat full access.',
+      confirmText: 'Setujui',
+      confirmColor: const Color(0xFF10B981),
+    );
+
+    if (confirm == true) {
+      setState(() => _isLoading = true);
+
+      try {
+        // Get current admin ID (you might need to get this from auth provider)
+        final adminId = 'ADMIN_ID'; // TODO: Get from AuthProvider
+
+        await _kycService.approveDocument(
+          documentId: kycDoc.id!,
+          adminId: adminId,
+        );
+
+        if (mounted) {
+          _showSuccessSnackBar('Dokumen KYC berhasil disetujui!\nUser ${widget.user.nama} sekarang ter-approve.');
+        }
+      } catch (e) {
+        if (mounted) {
+          _showErrorSnackBar('Gagal approve dokumen: $e');
+        }
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _rejectKYCDocument(KYCDocumentModel kycDoc) async {
+    // Show dialog to input rejection reason
+    final reason = await _showRejectReasonDialog();
+
+    if (reason != null && reason.isNotEmpty) {
+      setState(() => _isLoading = true);
+
+      try {
+        // Get current admin ID
+        final adminId = 'ADMIN_ID'; // TODO: Get from AuthProvider
+
+        await _kycService.rejectDocument(
+          documentId: kycDoc.id!,
+          adminId: adminId,
+          reason: reason,
+        );
+
+        if (mounted) {
+          _showSuccessSnackBar('Dokumen KYC ditolak.');
+        }
+      } catch (e) {
+        if (mounted) {
+          _showErrorSnackBar('Gagal reject dokumen: $e');
+        }
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<String?> _showRejectReasonDialog() async {
+    final TextEditingController reasonController = TextEditingController();
+
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Alasan Penolakan',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+        ),
+        content: TextField(
+          controller: reasonController,
+          decoration: const InputDecoration(
+            hintText: 'Masukkan alasan penolakan...',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, reasonController.text),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+            ),
+            child: const Text('Tolak'),
           ),
         ],
       ),
