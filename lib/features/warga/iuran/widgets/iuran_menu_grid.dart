@@ -21,16 +21,6 @@ class IuranMenuGrid extends StatelessWidget {
               label: 'Total\nTagihan',
               onTap: () {
                 // TODO: Navigate to total tagihan
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Total Tagihan',
-                      style: GoogleFonts.poppins(),
-                    ),
-                    backgroundColor: const Color(0xFF2F80ED),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
               },
             ),
           ),
@@ -41,16 +31,6 @@ class IuranMenuGrid extends StatelessWidget {
               label: 'Iuran\nSampah',
               onTap: () {
                 // TODO: Navigate to iuran sampah
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Iuran Sampah',
-                      style: GoogleFonts.poppins(),
-                    ),
-                    backgroundColor: const Color(0xFF2F80ED),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
               },
             ),
           ),
@@ -61,16 +41,6 @@ class IuranMenuGrid extends StatelessWidget {
               label: 'Laporan\nKas',
               onTap: () {
                 // TODO: Navigate to laporan kas
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Laporan Kas',
-                      style: GoogleFonts.poppins(),
-                    ),
-                    backgroundColor: const Color(0xFF2F80ED),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
               },
             ),
           ),
