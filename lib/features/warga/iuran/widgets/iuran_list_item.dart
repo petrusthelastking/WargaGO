@@ -98,75 +98,9 @@ class IuranListItem extends StatelessWidget {
               ],
             ),
           ),
-
-          const SizedBox(width: 8),
-
-          // Action Buttons
-          Row(
-            children: [
-              _buildActionButton(
-                icon: Icons.edit_rounded,
-                color: const Color(0xFF2F80ED),
-                onTap: () {
-                  // TODO: Edit iuran
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Edit $nama',
-                        style: GoogleFonts.poppins(),
-                      ),
-                      backgroundColor: const Color(0xFF2F80ED),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 8),
-              _buildActionButton(
-                icon: Icons.delete_rounded,
-                color: const Color(0xFFEF4444),
-                onTap: () {
-                  // TODO: Delete iuran
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Hapus $nama',
-                        style: GoogleFonts.poppins(),
-                      ),
-                      backgroundColor: const Color(0xFFEF4444),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
         ],
       ),
     ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.all(9),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: 19,
-        ),
-      ),
     );
   }
 

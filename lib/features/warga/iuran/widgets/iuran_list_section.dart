@@ -142,14 +142,14 @@ class _IuranListSectionState extends State<IuranListSection>
         'status': 'belum_lunas',
       },
       {
-        'nama': 'Jl. Merbabu',
-        'tanggal': 'Tersedia',
-        'status': 'tersedia',
+        'nama': 'Iuran Kebersihan',
+        'tanggal': '10 Nov 2025',
+        'status': 'belum_lunas',
       },
       {
-        'nama': 'Jl. Merbabu',
-        'tanggal': 'Tersedia',
-        'status': 'tersedia',
+        'nama': 'Iuran Listrik',
+        'tanggal': '15 Nov 2025',
+        'status': 'belum_lunas',
       },
     ];
 

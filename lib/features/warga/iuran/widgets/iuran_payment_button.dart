@@ -150,7 +150,7 @@ class IuranPaymentButton extends StatelessWidget {
                 context: context,
                 icon: Icons.account_balance_rounded,
                 title: 'Transfer Bank',
-                subtitle: 'Transfer ke rekening RT',
+                subtitle: 'Bayar dengan transfer bank',
                 onTap: () {
                   Navigator.pop(context);
                   _processPayment(context, 'Transfer Bank');
