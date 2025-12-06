@@ -11,13 +11,20 @@ class VeggieRotationManager {
 
   String get currentVeggie => _vegetables[_currentVeggieIndex];
 
-  void startRotation(PredictClass predictedClass) {
+  void startRotation(PredictClass? predictedClass) {
     switch (predictedClass) {
       case PredictClass.sayurAkar:
-        _vegetables = ['🥕', '🥔'];
+        _vegetables = [
+          '🥕',
+          // , '🥔'
+        ];
         break;
       case PredictClass.sayurBuah:
-        _vegetables = ['🫑', "🍅", '🥒', "🎃", '🥭'];
+        _vegetables = [
+          // '🫑',
+          "🍅",
+          //  '🥒', "🎃", '🥭'
+        ];
         break;
       case PredictClass.sayurBunga:
         _vegetables = ['🥦'];
@@ -26,7 +33,7 @@ class VeggieRotationManager {
         _vegetables = ['🥬'];
         break;
       default:
-        _vegetables = ['🍅', '🌶️', '🥕', '🥬', '🧄', '🧅', '🥒'];
+        _vegetables = ['❓', '❔', '⁉'];
     }
 
     _veggieTimer?.cancel();

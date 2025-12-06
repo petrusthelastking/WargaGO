@@ -125,6 +125,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
         if (mounted) setState(() {});
       },
     );
+    _veggieRotationManager.startRotation(null);
   }
 
   @override
@@ -247,7 +248,10 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
 
   void _setPictureNull() async {
     _cameraController!.resumePreview();
-    setState(() => _picture = null);
+    setState(() {
+      _picture = null;
+      _isProcessing = false;
+    });
   }
 
   File? _picture;
@@ -258,23 +262,34 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
     setState(() {
       _isProcessing = true;
       _picture = imageFile;
+      _result = null;
     });
 
-    _result = await _pcvkService.predict(
-      _picture!,
-      modelType: _useEfficient! ? 'efficientnetv2' : 'mlpv2_auto-clahe',
-      useSegmentation: _useSegmentation,
-      segMethod: _segMethod,
-      applyBrightnessContrast: _applyBrightnessContrast,
-    );
+    try {
+      final result = await _pcvkService.predict(
+        _picture!,
+        modelType: _useEfficient! ? 'efficientnetv2' : 'mlpv2_auto-clahe',
+        useSegmentation: _useSegmentation,
+        segMethod: _segMethod,
+        applyBrightnessContrast: _applyBrightnessContrast,
+      );
 
-    _veggieRotationManager.startRotation(_result!.predictedClass);
-
-    setState(() => _isProcessing = false);
+      _result ??= result;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error predicting image: $e');
+      }
+    } finally {
+      _veggieRotationManager.startRotation(_result?.predictedClass);
+      setState(() => _isProcessing = false);
+    }
   }
 
   void _handleStreaming() async {
-    setState(() => _processedImageBytes = null);
+    setState(() {
+      _processedImageBytes = null;
+      _result = null;
+    });
     if (_pcvkStreamService.isStreaming) {
       await _pcvkStreamService.stopStreaming();
     } else {
@@ -413,6 +428,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
               segMethod: _segMethod,
               applyBrightnessContrast: _applyBrightnessContrast,
               returnProcessedImage: _returnProcessedImage,
+              showModelSimpleSettings: !(_useEfficient ?? true),
               // HSV settings
               hsvHueMin: _hsvHueMin,
               hsvHueMax: _hsvHueMax,
@@ -563,7 +579,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
                                     ? '...'
                                     : _result?.predictedClass.displayName
                                               .replaceAll('_', ' ') ??
-                                          '-',
+                                          'Tidak ada hasil',
                                 style: GoogleFonts.poppins(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -580,6 +596,8 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
                           Text(
                             _isProcessing
                                 ? '...\n...'
+                                : _result == null
+                                ? 'Jaringan tidak stabil atau perbaikan server'
                                 : 'Kepercayaan: ${((_result?.confidence ?? 0) * 100).toStringAsFixed(2)}%\nWaktu prediksi: ${(_result?.predictionTimeMs ?? 0).toStringAsFixed(2)} ms',
                             style: GoogleFonts.poppins(
                               fontSize: 12,
