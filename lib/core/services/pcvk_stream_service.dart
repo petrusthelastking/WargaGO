@@ -416,8 +416,7 @@ Future<Uint8List?> _convertToJpegBackground(Map<String, dynamic> data) async {
         img = imglib.copyRotate(img, angle: 270);
       }
 
-      // Resize if needed here to save more bandwidth
-      // img = imglib.copyResize(img, width: 320);
+      // img = imglib.copyResize(img, width: 224, height: 224);
       return Uint8List.fromList(imglib.encodeJpg(img, quality: quality));
     }
   } catch (e) {
@@ -438,13 +437,22 @@ imglib.Image _convertYUV420ToImage(
   int width,
   int height,
 ) {
-  final img = imglib.Image(width: width, height: height);
+  const int targetWidth = 224;
+  const int targetHeight = 224;
 
-  for (int y = 0; y < height; y++) {
+  final img = imglib.Image(width: targetWidth, height: targetHeight);
+
+  // Calculate scaling factors
+  final double scaleX = width / targetWidth;
+  final double scaleY = height / targetHeight;
+
+  for (int ty = 0; ty < targetHeight; ty++) {
+    final int y = (ty * scaleY).floor();
     final int uvRowIndex = uvRowStride * (y >> 1);
     final int yp = y * bytesPerRow;
 
-    for (int x = 0; x < width; x++) {
+    for (int tx = 0; tx < targetWidth; tx++) {
+      final int x = (tx * scaleX).floor();
       final int uvIndex = uvPixelStride * (x >> 1) + uvRowIndex;
       final int ypIndex = yp + x;
 
@@ -457,7 +465,13 @@ imglib.Image _convertYUV420ToImage(
           .round();
       int b = (yVal + (1.732446 * (uVal - 128))).round();
 
-      img.setPixelRgb(x, y, b.clamp(0, 255), g.clamp(0, 255), r.clamp(0, 255));
+      img.setPixelRgb(
+        tx,
+        ty,
+        b.clamp(0, 255),
+        g.clamp(0, 255),
+        r.clamp(0, 255),
+      );
     }
   }
   return img;

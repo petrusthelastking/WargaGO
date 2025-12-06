@@ -993,7 +993,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
                               _pcvkStreamService.isStreaming
                         ? Image.memory(
                             _processedImageBytes!,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.fill,
                             width: double.infinity,
                             height: double.infinity,
                             gaplessPlayback: true,
