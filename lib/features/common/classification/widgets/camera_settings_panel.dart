@@ -162,7 +162,7 @@ class CameraSettingsPanel extends StatelessWidget {
                               _buildSwitchItem(
                                 context: context,
                                 icon: Remix.contrast_2_fill,
-                                title: 'Kecerahan & Kontras',
+                                title: 'Kecerahan & Kontras Lv2',
                                 value: applyBrightnessContrast,
                                 onChanged: onBrightnessContrastChange,
                               ),

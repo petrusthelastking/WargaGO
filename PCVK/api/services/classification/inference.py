@@ -17,7 +17,7 @@ if lib_path not in sys.path:
     sys.path.append(lib_path)
 
 from lib.extract_features import extract_all_features
-from lib.segment import auto_segment
+from lib.segment import apply_automatic_brightness_contrast, apply_clahe, auto_segment
 from api.configs.pcvk_config import CLASS_NAMES, DEVICE
 
 
@@ -205,11 +205,15 @@ def predict_image(
     
     # Apply segmentation if enabled
     if use_segmentation and seg_method != "none":
-        segmented_img = apply_segmentation(image_bgr, method=seg_method, apply_brightness_contrast=apply_brightness_contrast)
+        segmented_img = apply_segmentation(image_bgr, method=seg_method, apply_brightness_contrast=False)
     else:
-        segmented_img = image_bgr
+        segmented_img = image_bgr        
+
+    if apply_brightness_contrast: #LV2
+        segmented_img = apply_clahe(apply_automatic_brightness_contrast(segmented_img))
     
     # Extract features
+    segmented_img = apply_clahe(apply_automatic_brightness_contrast(segmented_img))
     features = extract_features_from_image(segmented_img)
     
     # Predict

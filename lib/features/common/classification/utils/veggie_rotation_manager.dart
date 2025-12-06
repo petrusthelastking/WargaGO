@@ -32,6 +32,9 @@ class VeggieRotationManager {
       case PredictClass.sayurDaun:
         _vegetables = ['🥬'];
         break;
+      case PredictClass.sayurPolong:
+        _vegetables = ['🫛'];
+        break;
       default:
         _vegetables = ['❓', '❔', '⁉'];
     }

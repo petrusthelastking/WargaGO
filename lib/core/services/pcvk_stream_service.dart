@@ -45,6 +45,8 @@ class PCVKStreamService {
   Function(String message)? onStatusMessage;
   Function(String message)? onError;
   Function(Uint8List uint8List)? onProcessedImage;
+  Function()? onConnectionClosed;
+  Function()? onConnected;
 
   PCVKStreamService({
     CameraController? cameraController,
@@ -52,29 +54,45 @@ class PCVKStreamService {
     this.onStatusMessage,
     this.onError,
     this.onProcessedImage,
+    this.onConnectionClosed,
+    this.onConnected,
   }) {
     _cameraController = cameraController;
+    wsConnect();
+  }
 
-    _channel = WebSocketChannel.connect(
-      UrlPCVKAPI.buildWebSocketEndpoint('pcvk/ws/predict'),
-    );
+  void wsConnect() {
+    try {
+      _channel = WebSocketChannel.connect(
+        UrlPCVKAPI.buildWebSocketEndpoint('pcvk/ws/predict'),
+      );
+      onConnected?.call();
+      _channelSubscription = _channel!.stream.listen(
+        (message) {
+          _handleServerMessage(message);
+        },
+        onError: (error) {
+          if (kDebugMode) {
+            print('WebSocket error: $error');
+          }
+          onError?.call(error.toString());
+        },
+        onDone: () {
+          if (kDebugMode) {
+            print('WebSocket connection closed');
+          }
+          onConnectionClosed?.call();
+        },
+      );
+    } catch (_) {
+      onConnectionClosed?.call();
+    }
+  }
 
-    _channelSubscription = _channel!.stream.listen(
-      (message) {
-        _handleServerMessage(message);
-      },
-      onError: (error) {
-        if (kDebugMode) {
-          print('WebSocket error: $error');
-        }
-        onError?.call(error.toString());
-      },
-      onDone: () {
-        if (kDebugMode) {
-          print('WebSocket connection closed');
-        }
-      },
-    );
+  void wsReconnect() {
+    Future.delayed(Duration(microseconds: 500), () {
+      wsConnect();
+    });
   }
 
   Future<void> initCamera({
@@ -182,7 +200,7 @@ class PCVKStreamService {
     }
   }
 
-  Future<void> _processAndSendFrame(CameraImage image) async {
+  Future<Uint8List?> processImage(CameraImage image) async {
     final isolateData = {
       'planes': image.planes
           .map(
@@ -205,6 +223,12 @@ class PCVKStreamService {
       _convertToJpegBackground,
       isolateData,
     );
+
+    return jpegBytes;
+  }
+
+  Future<void> _processAndSendFrame(CameraImage image) async {
+    final jpegBytes = await processImage(image);
 
     if (jpegBytes != null && _channel != null) {
       await _sendInChunks(jpegBytes);
