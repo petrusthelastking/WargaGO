@@ -35,6 +35,8 @@ class CameraSettingsPanel extends StatelessWidget {
   final Function(double, double, double, double, double, double) onHsvChange;
   final VoidCallback onClose;
 
+  final bool showModelSimpleSettings;
+
   const CameraSettingsPanel({
     super.key,
     required this.hasMultipleCameras,
@@ -61,6 +63,7 @@ class CameraSettingsPanel extends StatelessWidget {
     required this.onReturnProcessedImageChange,
     required this.onHsvChange,
     required this.onClose,
+    required this.showModelSimpleSettings,
   });
 
   @override
@@ -123,50 +126,56 @@ class CameraSettingsPanel extends StatelessWidget {
                           onTap: () => _showFpsPicker(context),
                           isLoading: isSwitchingCamera,
                         ),
-                        const SizedBox(height: 8),
-                        const Divider(height: 1),
-                        const SizedBox(height: 8),
-                        // Model Settings Section
-                        Text(
-                          'Pengaturan Model (Model Simple)',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+
+                        if (showModelSimpleSettings)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _divider(),
+                              // Model Settings Section
+                              Text(
+                                'Pengaturan Model (Model Simple)',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              _buildSwitchItem(
+                                context: context,
+                                icon: Remix.scan_2_fill,
+                                title: 'Gunakan Segmentasi',
+                                value: useSegmentation,
+                                onChanged: onSegmentationChange,
+                              ),
+                              if (useSegmentation)
+                                _buildSettingItem(
+                                  context: context,
+                                  icon: Remix.palette_fill,
+                                  title: 'Metode Segmentasi',
+                                  subtitle: _getSegMethodName(segMethod),
+                                  onTap: () => _showSegMethodPicker(context),
+                                ),
+                              if (useSegmentation && segMethod == 'hsv')
+                                _buildHsvSliders(context),
+                              _buildSwitchItem(
+                                context: context,
+                                icon: Remix.contrast_2_fill,
+                                title: 'Kecerahan & Kontras Lv2',
+                                value: applyBrightnessContrast,
+                                onChanged: onBrightnessContrastChange,
+                              ),
+                              _buildSwitchItem(
+                                context: context,
+                                icon: Remix.image_fill,
+                                title:
+                                    'Kembalikan Gambar Proses (Live Preview)',
+                                value: returnProcessedImage,
+                                onChanged: onReturnProcessedImageChange,
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildSwitchItem(
-                          context: context,
-                          icon: Remix.scan_2_fill,
-                          title: 'Gunakan Segmentasi',
-                          value: useSegmentation,
-                          onChanged: onSegmentationChange,
-                        ),
-                        if (useSegmentation)
-                          _buildSettingItem(
-                            context: context,
-                            icon: Remix.palette_fill,
-                            title: 'Metode Segmentasi',
-                            subtitle: _getSegMethodName(segMethod),
-                            onTap: () => _showSegMethodPicker(context),
-                          ),
-                        if (useSegmentation && segMethod == 'hsv')
-                          _buildHsvSliders(context),
-                        _buildSwitchItem(
-                          context: context,
-                          icon: Remix.contrast_2_fill,
-                          title: 'Kecerahan & Kontras',
-                          value: applyBrightnessContrast,
-                          onChanged: onBrightnessContrastChange,
-                        ),
-                        _buildSwitchItem(
-                          context: context,
-                          icon: Remix.image_fill,
-                          title: 'Kembalikan Gambar Proses (Live Preview)',
-                          value: returnProcessedImage,
-                          onChanged: onReturnProcessedImageChange,
-                        ),
                       ],
                     ),
                   ),
@@ -176,6 +185,17 @@ class CameraSettingsPanel extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Column _divider() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        const Divider(height: 1),
+        const SizedBox(height: 8),
+      ],
     );
   }
 
@@ -294,6 +314,7 @@ class CameraSettingsPanel extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ...[
+              ResolutionPreset.low,
               ResolutionPreset.medium,
               ResolutionPreset.high,
               ResolutionPreset.veryHigh,

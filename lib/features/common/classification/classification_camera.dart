@@ -5,6 +5,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:wargago/core/enums/pcvk_modeltype.dart';
 import 'package:wargago/core/models/PCVK/predict_response.dart';
@@ -45,7 +46,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
   // Model settings
   bool _useSegmentation = true;
   String _segMethod = 'u2netp';
-  bool _applyBrightnessContrast = true;
+  bool _applyBrightnessContrast = false;
   bool _returnProcessedImage = false;
 
   // HSV settings (for HSV segmentation method)
@@ -59,6 +60,8 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
   late final PcvkService _pcvkService;
   late final PCVKStreamService _pcvkStreamService;
   late final VeggieRotationManager _veggieRotationManager;
+
+  bool _reconnecting = false;
 
   Future<void> _initializeCameras() async {
     try {
@@ -85,7 +88,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
             predictionTimeMs: result.predictionTimeMs,
           );
           _veggieRotationManager.startRotation(_result!.predictedClass);
-          setState(() {});
+          setState(() => _reconnecting = false);
         },
         onProcessedImage: (uint8List) {
           if (!_pcvkStreamService.isStreaming) {
@@ -93,6 +96,18 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
             return;
           }
           setState(() => _processedImageBytes = uint8List);
+        },
+        onConnected: () => setState(() => _reconnecting = false),
+        onConnectionClosed: () {
+          setState(() {
+            _processedImageBytes = null;
+            _result = null;
+            _reconnecting = true;
+          });
+          if (_pcvkStreamService.isStreaming) {
+            _pcvkStreamService.stopStreaming();
+          }
+          _pcvkStreamService.wsReconnect();
         },
       );
       await _cameraController!.initialize();
@@ -125,6 +140,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
         if (mounted) setState(() {});
       },
     );
+    _veggieRotationManager.startRotation(null);
   }
 
   @override
@@ -215,14 +231,14 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
       );
 
       if (image != null && mounted) {
-        _processImage(File(image.path));
+        _processImage(imageFile: File(image.path));
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
     }
   }
 
-  Future<void> _takePicture() async {
+  Future<void> _takePicture({bool useSameQualitWithStreaming = false}) async {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return;
     }
@@ -233,11 +249,29 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
     });
     await _pcvkStreamService.stopStreaming();
 
+    Future<Uint8List?> getImageFromStream(CameraImage image) async =>
+        await _pcvkStreamService.processImage(image);
+
     try {
-      final XFile image = await _cameraController!.takePicture();
-      _cameraController!.pausePreview();
-      if (mounted) {
-        _processImage(File(image.path));
+      if (useSameQualitWithStreaming) {
+        late Future<Uint8List?> imageStream;
+        await _cameraController!.startImageStream(
+          (image) => imageStream = getImageFromStream(image),
+        );
+        final XFile image = await _cameraController!.takePicture();
+        await _cameraController!.stopImageStream();
+        final Uint8List? jpegBytes = await imageStream;
+        if (mounted && jpegBytes != null) {
+          _processImage(imageFile: File(image.path), imageBytes: jpegBytes);
+        }
+      } else {
+        final XFile image = await _cameraController!.takePicture();
+        final bytes = await image.readAsBytes();
+
+        _cameraController!.pausePreview();
+        if (mounted) {
+          _processImage(imageFile: File(image.path), imageBytes: bytes);
+        }
       }
     } catch (e) {
       debugPrint('Error taking picture: $e');
@@ -247,34 +281,88 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
 
   void _setPictureNull() async {
     _cameraController!.resumePreview();
-    setState(() => _picture = null);
+    setState(() {
+      _picture = null;
+      _isProcessing = false;
+    });
   }
 
   File? _picture;
   PredictResponse? _result;
   Uint8List? _processedImageBytes;
 
-  void _processImage(File imageFile) async {
+  void _processImage({required File imageFile, Uint8List? imageBytes}) async {
+    Future<Uint8List?> toBgr(Uint8List imageBytes) async {
+      final img.Image? decoded = img.decodeImage(imageBytes);
+
+      Uint8List? bgrImageBytes;
+      if (decoded != null) {
+        final img.Image bgrImage = img.Image(
+          width: decoded.width,
+          height: decoded.height,
+        );
+
+        for (int y = 0; y < decoded.height; y++) {
+          for (int x = 0; x < decoded.width; x++) {
+            final pixel = decoded.getPixel(x, y);
+            bgrImage.setPixelRgb(
+              x,
+              y,
+              pixel.b.toInt(),
+              pixel.g.toInt(),
+              pixel.r.toInt(),
+            );
+          }
+        }
+        bgrImageBytes = Uint8List.fromList(img.encodeJpg(bgrImage));
+      }
+      return bgrImageBytes;
+    }
+
+    File? tempFile;
+
+    if (!_useEfficient! && imageBytes != null) {
+      imageBytes = await toBgr(imageBytes);
+    }
+
+    if (imageBytes != null) {
+      tempFile = File(
+        '${Directory.systemTemp.path}/processed_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+      await tempFile.writeAsBytes(imageBytes);
+    }
+
     setState(() {
       _isProcessing = true;
       _picture = imageFile;
+      _result = null;
     });
 
-    _result = await _pcvkService.predict(
-      _picture!,
-      modelType: _useEfficient! ? 'efficientnetv2' : 'mlpv2_auto-clahe',
-      useSegmentation: _useSegmentation,
-      segMethod: _segMethod,
-      applyBrightnessContrast: _applyBrightnessContrast,
-    );
+    try {
+      final result = await _pcvkService.predict(
+        tempFile ?? imageFile,
+        modelType: _useEfficient! ? 'efficientnetv2' : 'mlpv2_auto-clahe',
+        useSegmentation: _useSegmentation,
+        segMethod: _segMethod,
+        applyBrightnessContrast: _applyBrightnessContrast,
+      );
 
-    _veggieRotationManager.startRotation(_result!.predictedClass);
-
-    setState(() => _isProcessing = false);
+      _result ??= result;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error predicting image: $e');
+      }
+    } finally {
+      _veggieRotationManager.startRotation(_result?.predictedClass);
+      setState(() => _isProcessing = false);
+    }
   }
 
   void _handleStreaming() async {
-    setState(() => _processedImageBytes = null);
+    setState(() {
+      _processedImageBytes = null;
+      _result = null;
+    });
     if (_pcvkStreamService.isStreaming) {
       await _pcvkStreamService.stopStreaming();
     } else {
@@ -413,6 +501,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
               segMethod: _segMethod,
               applyBrightnessContrast: _applyBrightnessContrast,
               returnProcessedImage: _returnProcessedImage,
+              showModelSimpleSettings: !(_useEfficient ?? true),
               // HSV settings
               hsvHueMin: _hsvHueMin,
               hsvHueMax: _hsvHueMax,
@@ -563,7 +652,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
                                     ? '...'
                                     : _result?.predictedClass.displayName
                                               .replaceAll('_', ' ') ??
-                                          '-',
+                                          'Tidak ada hasil',
                                 style: GoogleFonts.poppins(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -580,6 +669,8 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
                           Text(
                             _isProcessing
                                 ? '...\n...'
+                                : _result == null
+                                ? 'Jaringan tidak stabil atau perbaikan server'
                                 : 'Kepercayaan: ${((_result?.confidence ?? 0) * 100).toStringAsFixed(2)}%\nWaktu prediksi: ${(_result?.predictionTimeMs ?? 0).toStringAsFixed(2)} ms',
                             style: GoogleFonts.poppins(
                               fontSize: 12,
@@ -896,6 +987,8 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
                             Text(
                               _pcvkStreamService.isStreaming
                                   ? '${_result?.predictedClass ?? "..."} $_currentVeggie\nKepercayaan: ${((_result?.confidence ?? 0) * 100).toStringAsFixed(0)}%'
+                                  : _reconnecting
+                                  ? 'Menghubungkan...'
                                   : 'Aktifkan\nLive Preview',
                               textAlign: TextAlign.center,
                               style: GoogleFonts.poppins().copyWith(
@@ -975,7 +1068,7 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
                               _pcvkStreamService.isStreaming
                         ? Image.memory(
                             _processedImageBytes!,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.fill,
                             width: double.infinity,
                             height: double.infinity,
                             gaplessPlayback: true,

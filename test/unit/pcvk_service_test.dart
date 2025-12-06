@@ -283,6 +283,7 @@ void main() async {
           "segmentation_used": true,
           "segmentation_method": "u2netp",
           "apply_brightness_contrast": true,
+          'prediction_time_ms': 150.5,
         });
         expect(result.modelType, PcvkModelType.mlpv2AutoClahe);
 
@@ -399,7 +400,7 @@ void main() async {
           expect(result.predictions.length, 2);
 
           // First result
-          expect(result.predictions[0].predictedClass, 'Sayur Akar');
+          expect(result.predictions[0].predictedClass.toString(), 'Sayur Akar');
           expect(result.predictions[0].confidence, 0.9439828395843506);
           expect(
             result.predictions[0].allConfidences['Sayur Akar'],
@@ -410,7 +411,7 @@ void main() async {
           expect(result.predictions[0].error, null);
 
           // Second result
-          expect(result.predictions[1].predictedClass, 'Sayur Buah');
+          expect(result.predictions[1].predictedClass.toString(), 'Sayur Buah');
           expect(result.predictions[1].confidence, 0.7061872482299805);
           expect(
             result.predictions[1].allConfidences['Sayur Buah'],
@@ -446,7 +447,7 @@ void main() async {
         expect(result.predictions.length, 2);
 
         // First result
-        expect(result.predictions[0].predictedClass, 'Sayur Akar');
+        expect(result.predictions[0].predictedClass.toString(), 'Sayur Akar');
         expect(result.predictions[0].confidence, 0.9439828395843506);
         expect(
           result.predictions[0].allConfidences['Sayur Akar'],
