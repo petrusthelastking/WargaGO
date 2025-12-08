@@ -14,7 +14,7 @@ MODEL_PATHS = {
     "u2netp": os.path.join(_MODEL_BASE_DIR, "u2netp.onnx"),
 }
 
-CLASS_NAMES = ["Sayur Akar", "Sayur Buah", "Sayur_Bunga", "Sayur Daun", "Sayur Polong"]
+CLASS_NAMES = ["Sayur Akar", "Sayur Buah", "Sayur Bunga", "Sayur Daun", "Sayur Polong"]
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

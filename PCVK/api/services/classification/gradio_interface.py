@@ -187,13 +187,13 @@ def create_gradio_interface():
             """
             # 🥬 Sistem Klasifikasi Sayuran
             
-            Upload gambar sayuran untuk mengklasifikasikannya ke dalam 4 kategori:
-            - **Sayur Akar** (wortel, lobak, dll)
-            - **Sayur Buah** (tomat, terong, cabai, dll)
-            - **Sayur Daun** (bayam, sawi, kangkung, dll)
-            - **Sayur Polong** (kacang panjang, buncis, dll)
-            
-            Model menggunakan MLP dengan ekstraksi fitur: 44 (HOG: 5, LBP: 6, SIFT: 8, Color-Histogram: 12, Haralick: 13).
+            Upload gambar sayuran untuk mengklasifikasikannya ke dalam 5 kategori:
+            - **Sayur Akar** (wortel, kentang, lobak)
+            - **Sayur Buah** (tomat, pepaya, labu, timun, pare, cabai cina)
+            - **Sayur Bunga** (brocoli, kembang kol)
+            - **Sayur Daun** (kubis)
+            - **Sayur Polong** (buncis)            
+          
             """
         )
 
@@ -231,7 +231,7 @@ def create_gradio_interface():
                     # Brightness & Contrast Enhancement
                     apply_brightness_contrast = gr.Checkbox(
                         value=True,
-                        label="Gunakan Brightness & Contrast Enhancement (CLAHE)",
+                        label="Gunakan Brightness & Contrast Lv2",
                         info="Menerapkan peningkatan kecerahan dan kontras adaptif",
                     )
 
