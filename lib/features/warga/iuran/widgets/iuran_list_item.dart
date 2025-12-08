@@ -2,21 +2,19 @@
 // IURAN LIST ITEM WIDGET
 // ============================================================================
 // Widget item untuk daftar iuran dengan icon, nama, tanggal, dan action buttons
+// ✅ UPDATED: Now using TagihanModel from Firestore
 // ============================================================================
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/models/tagihan_model.dart';
 import '../pages/iuran_detail_page.dart';
 
 class IuranListItem extends StatelessWidget {
-  final String nama;
-  final String tanggal;
-  final String status; // 'lunas', 'belum_lunas', 'tersedia'
+  final TagihanModel tagihan;
 
   const IuranListItem({
     super.key,
-    required this.nama,
-    required this.tanggal,
-    required this.status,
+    required this.tagihan,
   });
 
   @override
@@ -28,11 +26,7 @@ class IuranListItem extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (context) => IuranDetailPage(
-              namaIuran: nama,
-              jumlah: 100000, // TODO: Pass real data
-              tanggal: tanggal,
-              status: status,
-              keterangan: 'Iuran wajib untuk keamanan lingkungan RT/RW',
+              tagihan: tagihan,
             ),
           ),
         );
@@ -59,12 +53,12 @@ class IuranListItem extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: _getStatusColor().withValues(alpha: 0.12),
+                color: tagihan.statusColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 _getStatusIcon(),
-                color: _getStatusColor(),
+                color: tagihan.statusColor,
                 size: 24,
             ),
           ),
@@ -77,7 +71,7 @@ class IuranListItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  nama,
+                  tagihan.jenisIuranName,
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -86,14 +80,36 @@ class IuranListItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  tanggal,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: _getStatusTextColor(),
-                    letterSpacing: 0.1,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      tagihan.periode,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFF6B7280),
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '•',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: const Color(0xFF6B7280),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      tagihan.formattedNominal,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF1F2937),
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -105,39 +121,15 @@ class IuranListItem extends StatelessWidget {
   }
 
   IconData _getStatusIcon() {
-    switch (status) {
-      case 'lunas':
+    switch (tagihan.status) {
+      case 'Lunas':
         return Icons.check_circle_rounded;
-      case 'belum_lunas':
+      case 'Belum Dibayar':
         return Icons.account_balance_wallet_rounded;
-      case 'tersedia':
-        return Icons.location_on_rounded;
+      case 'Terlambat':
+        return Icons.warning_rounded;
       default:
         return Icons.receipt_rounded;
-    }
-  }
-
-  Color _getStatusColor() {
-    switch (status) {
-      case 'lunas':
-        return const Color(0xFF10B981);
-      case 'belum_lunas':
-        return const Color(0xFF2F80ED);
-      case 'tersedia':
-        return const Color(0xFF10B981);
-      default:
-        return const Color(0xFF6B7280);
-    }
-  }
-
-  Color _getStatusTextColor() {
-    switch (status) {
-      case 'lunas':
-        return const Color(0xFF10B981);
-      case 'tersedia':
-        return const Color(0xFF10B981);
-      default:
-        return const Color(0xFF6B7280);
     }
   }
 }

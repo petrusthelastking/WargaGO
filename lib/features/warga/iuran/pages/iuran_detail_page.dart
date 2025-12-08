@@ -2,28 +2,22 @@
 // IURAN DETAIL PAGE
 // ============================================================================
 // Halaman detail ringkasan iuran dengan tombol bayar
+// ✅ UPDATED: Now using TagihanModel from Firestore
 // ============================================================================
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/models/tagihan_model.dart';
 import '../widgets/iuran_status_card.dart';
 import '../widgets/iuran_info_card.dart';
 import '../widgets/iuran_keterangan_card.dart';
 import '../widgets/iuran_payment_button.dart';
 
 class IuranDetailPage extends StatelessWidget {
-  final String namaIuran;
-  final int jumlah;
-  final String tanggal;
-  final String status;
-  final String? keterangan;
+  final TagihanModel tagihan;
 
   const IuranDetailPage({
     super.key,
-    required this.namaIuran,
-    required this.jumlah,
-    required this.tanggal,
-    required this.status,
-    this.keterangan,
+    required this.tagihan,
   });
 
   @override
@@ -56,30 +50,32 @@ class IuranDetailPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Status Card
-                  IuranStatusCard(status: status),
+                  IuranStatusCard(status: tagihan.status),
                   
                   const SizedBox(height: 24),
                   
                   // Info Card
                   IuranInfoCard(
-                    namaIuran: namaIuran,
-                    jumlah: jumlah,
-                    tanggal: tanggal,
+                    namaIuran: tagihan.jenisIuranName,
+                    jumlah: tagihan.nominal.toInt(),
+                    tanggal: tagihan.formattedPeriodeTanggal,
                   ),
                   
                   const SizedBox(height: 24),
                   
-                  // Keterangan jika ada
-                  if (keterangan != null && keterangan!.isNotEmpty)
-                    IuranKeteranganCard(keterangan: keterangan!),
+                  // Keterangan if available
+                  if (tagihan.catatan != null && tagihan.catatan!.isNotEmpty)
+                    IuranKeteranganCard(keterangan: tagihan.catatan!),
                 ],
               ),
             ),
           ),
           
-          // Bottom Payment Button (hanya jika belum lunas)
-          if (status == 'belum_lunas')
-            IuranPaymentButton(jumlah: jumlah),
+          // Bottom Payment Button (only if not lunas)
+          if (tagihan.status != 'Lunas')
+            IuranPaymentButton(
+              tagihan: tagihan,
+            ),
         ],
       ),
     );

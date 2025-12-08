@@ -17,9 +17,10 @@ class _EditProfilScreenState extends State<EditProfilScreen> with SingleTickerPr
   late TextEditingController _nikController;
   late TextEditingController _noTeleponController;
   late TextEditingController _alamatController;
-  bool _isLoading = false;
+  late TextEditingController _keluargaIdController; // ⭐ ADDED
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  bool _isLoading = false; // ⭐ ADDED
 
   @override
   void initState() {
@@ -30,6 +31,7 @@ class _EditProfilScreenState extends State<EditProfilScreen> with SingleTickerPr
     _nikController = TextEditingController(text: user?.nik ?? '');
     _noTeleponController = TextEditingController(text: user?.noTelepon ?? '');
     _alamatController = TextEditingController(text: user?.alamat ?? '');
+    _keluargaIdController = TextEditingController(text: user?.keluargaId ?? ''); // ⭐ ADDED
 
     _animationController = AnimationController(
       vsync: this,
@@ -49,10 +51,10 @@ class _EditProfilScreenState extends State<EditProfilScreen> with SingleTickerPr
     _nikController.dispose();
     _noTeleponController.dispose();
     _alamatController.dispose();
+    _keluargaIdController.dispose(); // ⭐ ADDED
     _animationController.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -222,9 +224,34 @@ class _EditProfilScreenState extends State<EditProfilScreen> with SingleTickerPr
 
                       const SizedBox(height: 16),
 
+
+                      const SizedBox(height: 16),
+
+                      // ⭐ ADDED: Keluarga ID Field
+                      _buildModernTextField(
+                        controller: _keluargaIdController,
+                        label: 'ID Keluarga',
+                        hint: 'Contoh: keluarga_001',
+                        icon: Icons.family_restroom_rounded,
+                        keyboardType: TextInputType.text,
+                        helperText: 'ID keluarga diperlukan untuk melihat tagihan iuran.\nHubungi admin jika tidak tahu ID keluarga Anda.',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'ID Keluarga tidak boleh kosong';
+                          }
+                          // Check format (alphanumeric + underscore)
+                          if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
+                            return 'Format tidak valid (hanya huruf, angka, dan underscore)';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 16),
+
                       _buildModernTextField(
                         controller: _noTeleponController,
-                        label: 'Nomor Telepon',
+                        label: 'No. Telepon',
                         hint: 'Masukkan nomor telepon',
                         icon: Icons.phone_outlined,
                         keyboardType: TextInputType.phone,
@@ -240,7 +267,7 @@ class _EditProfilScreenState extends State<EditProfilScreen> with SingleTickerPr
                         maxLines: 3,
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
                       // Info Box
                       Container(
@@ -300,6 +327,7 @@ class _EditProfilScreenState extends State<EditProfilScreen> with SingleTickerPr
     TextInputType? keyboardType,
     int maxLines = 1,
     String? Function(String?)? validator,
+    String? helperText, // ⭐ ADDED
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -328,7 +356,6 @@ class _EditProfilScreenState extends State<EditProfilScreen> with SingleTickerPr
           child: TextFormField(
             controller: controller,
             keyboardType: keyboardType,
-            maxLines: maxLines,
             validator: validator,
             style: GoogleFonts.poppins(
               fontSize: 15,
@@ -347,6 +374,13 @@ class _EditProfilScreenState extends State<EditProfilScreen> with SingleTickerPr
               ),
               filled: true,
               fillColor: Colors.white,
+              helperText: helperText, // ⭐ ADDED
+              helperMaxLines: 3, // ⭐ ADDED
+              helperStyle: GoogleFonts.poppins( // ⭐ ADDED
+                fontSize: 11,
+                color: const Color(0xFF6B7280),
+                height: 1.4,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
@@ -393,10 +427,10 @@ class _EditProfilScreenState extends State<EditProfilScreen> with SingleTickerPr
   Widget _buildSaveButton() {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
           colors: [Color(0xFF2F80ED), Color(0xFF1E5BB8)],
         ),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
@@ -471,6 +505,7 @@ class _EditProfilScreenState extends State<EditProfilScreen> with SingleTickerPr
         nik: _nikController.text.trim().isEmpty ? null : _nikController.text.trim(),
         noTelepon: _noTeleponController.text.trim().isEmpty ? null : _noTeleponController.text.trim(),
         alamat: _alamatController.text.trim().isEmpty ? null : _alamatController.text.trim(),
+        keluargaId: _keluargaIdController.text.trim().isEmpty ? null : _keluargaIdController.text.trim(), // ⭐ ADDED
       );
 
       // Update to Firestore
