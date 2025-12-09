@@ -1,6 +1,20 @@
 {
   "indexes": [
     {
+      "collectionGroup": "iuran",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "tanggalBuat",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "tagihan",
       "queryScope": "COLLECTION",
       "fields": [

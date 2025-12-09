@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:wargago/core/providers/instance_provider.dart';
+import 'package:wargago/core/services/gemini_service.dart';
 import 'firebase_options.dart';
 import 'app/app.dart';
 import 'core/providers/auth_provider.dart';
@@ -79,6 +80,15 @@ void main() async {
   try {
     await dotenv.load(fileName: ".env");
     print('✅ .env file loaded (development mode)');
+
+    // Initialize Gemini AI service
+    try {
+      GeminiService().initialize();
+      print('✅ Gemini AI service initialized');
+    } catch (e) {
+      print('⚠️  Gemini AI initialization skipped: $e');
+      print('   (Set GEMINI_API_KEY in .env to enable AI features)');
+    }
   } catch (e) {
     print('ℹ️  .env file not found (production mode) - This is normal');
   }
