@@ -61,6 +61,8 @@ dependencies:
   ming_cute_icons: ^0.0.7
   web_socket_channel: ^3.0.3
   image: ^4.5.4
+  google_generative_ai: ^0.4.3
+  html: ^0.15.4
 
 flutter:
   uses-material-design: true

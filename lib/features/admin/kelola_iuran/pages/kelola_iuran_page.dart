@@ -1,8 +1,8 @@
 // ============================================================================
-// KELOLA IURAN PAGE - Tab-based Dashboard (Like Kelola Pemasukan)
+// KELOLA IURAN PAGE - SIMPLIFIED (No Tabs)
 // ============================================================================
-// Redesigned with tab layout for better organization
-// Tabs: Master Jenis | Buat Tagihan | Kelola Tagihan
+// Directly show Buat Tagihan content with statistics at top
+// Removed: Master Jenis & Kelola Tagihan (unnecessary tabs)
 // ============================================================================
 
 import 'package:flutter/material.dart';
@@ -10,9 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/providers/jenis_iuran_provider.dart';
-import 'master_jenis_iuran_page.dart';
 import 'buat_tagihan_page.dart';
-import 'kelola_tagihan_page.dart';
 
 class KelolaIuranPage extends StatefulWidget {
   const KelolaIuranPage({super.key});
@@ -21,10 +19,7 @@ class KelolaIuranPage extends StatefulWidget {
   State<KelolaIuranPage> createState() => _KelolaIuranPageState();
 }
 
-class _KelolaIuranPageState extends State<KelolaIuranPage>
-    with SingleTickerProviderStateMixin {
-  TabController? _tabController;
-
+class _KelolaIuranPageState extends State<KelolaIuranPage> {
   int _totalTagihan = 0;
   int _tagihanBelumBayar = 0;
   int _tagihanLunas = 0;
@@ -34,24 +29,10 @@ class _KelolaIuranPageState extends State<KelolaIuranPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
       _loadTagihanStats();
     });
-
-    _tabController!.addListener(() {
-      if (!_tabController!.indexIsChanging && mounted) {
-        setState(() {}); // Refresh when tab changes
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _tabController?.dispose();
-    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -116,16 +97,6 @@ class _KelolaIuranPageState extends State<KelolaIuranPage>
 
   @override
   Widget build(BuildContext context) {
-    // Return loading indicator if tab controller not ready
-    if (_tabController == null) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF5F7FA),
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -139,48 +110,15 @@ class _KelolaIuranPageState extends State<KelolaIuranPage>
         ),
         backgroundColor: const Color(0xFF2988EA),
         elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            color: const Color(0xFF2988EA),
-            child: TabBar(
-              controller: _tabController!,
-              indicatorColor: Colors.white,
-              indicatorWeight: 3,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
-              labelStyle: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-              unselectedLabelStyle: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-              tabs: const [
-                Tab(text: 'Master Jenis'),
-                Tab(text: 'Buat Tagihan'),
-                Tab(text: 'Kelola Tagihan'),
-              ],
-            ),
-          ),
-        ),
       ),
       body: Column(
         children: [
-          // Stats Card Section (Always visible at top)
+          // Stats Card Section at top
           _buildStatsSection(),
 
-          // Tab Content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController!,
-              children: const [
-                MasterJenisIuranPage(),
-                BuatTagihanPage(),
-                KelolaTagihanPage(),
-              ],
-            ),
+          // Main Content: Buat Tagihan Page
+          const Expanded(
+            child: BuatTagihanPage(),
           ),
         ],
       ),

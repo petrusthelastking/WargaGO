@@ -16,6 +16,7 @@ import 'package:wargago/features/common/classification/widgets/inkwell_iconbutto
 import 'package:wargago/features/common/classification/widgets/white_button.dart';
 import 'package:wargago/features/common/classification/widgets/camera_settings_panel.dart';
 import 'package:wargago/features/common/classification/utils/veggie_rotation_manager.dart';
+import 'package:wargago/features/common/classification/recipe_recommendations_page.dart';
 import 'package:ming_cute_icons/ming_cute_icons.dart';
 import 'package:remixicon/remixicon.dart';
 
@@ -689,7 +690,20 @@ class _ClassificationCameraPageState extends State<ClassificationCameraPage> {
                 ),
                 const SizedBox(height: 16),
                 WhiteButton(
-                  onTap: _isProcessing ? null : () {},
+                  onTap: _isProcessing || _result == null || _picture == null
+                      ? null
+                      : () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RecipeRecommendationsPage(
+                                vegetableName: _result!.predictedClass.displayName
+                                    .replaceAll('_', ' '),
+                                imagePath: _picture!.path, // Kirim foto juga!
+                              ),
+                            ),
+                          );
+                        },
                   color: Theme.of(context).primaryColor,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
