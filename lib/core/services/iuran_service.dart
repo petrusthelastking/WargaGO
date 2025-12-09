@@ -1,6 +1,8 @@
 // filepath: lib/core/services/iuran_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import '../models/iuran_model.dart';
 
 class IuranService {
@@ -141,6 +143,12 @@ class IuranService {
         throw Exception('Iuran not found');
       }
 
+      // Get current user (admin) for createdBy
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        throw Exception('User not authenticated');
+      }
+
       // Get all approved users (warga)
       final usersSnapshot = await _usersCollection
           .where('role', isEqualTo: 'warga')
@@ -148,35 +156,65 @@ class IuranService {
           .get();
 
       int count = 0;
+      final now = DateTime.now();
+      final periode = DateFormat('MMMM yyyy', 'id_ID').format(iuran.tanggalJatuhTempo);
 
       for (var userDoc in usersSnapshot.docs) {
         final userId = userDoc.id;
         final userData = userDoc.data() as Map<String, dynamic>?;
         final userName = userData?['nama'] as String? ?? 'Unknown';
-        final keluargaId = userData?['keluargaId'] as String?; // ⭐ Get keluargaId
+        final keluargaId = userData?['keluargaId'] as String?;
+
+        if (keluargaId == null || keluargaId.isEmpty) {
+          if (kDebugMode) {
+            print('⚠️ Skipping user $userName - no keluargaId');
+          }
+          continue;
+        }
+
+        // Get keluarga name
+        String keluargaName = 'Keluarga $userName';
+        try {
+          final keluargaDoc = await FirebaseFirestore.instance
+              .collection('keluarga')
+              .doc(keluargaId)
+              .get();
+          if (keluargaDoc.exists) {
+            keluargaName = keluargaDoc.data()?['namaKepalaKeluarga'] ?? keluargaName;
+          }
+        } catch (e) {
+          // Use default if error
+        }
 
         // Check if tagihan already exists
         final existingTagihan = await _tagihanCollection
-            .where('iuranId', isEqualTo: iuranId)
-            .where('userId', isEqualTo: userId)
+            .where('jenisIuranId', isEqualTo: iuranId)
+            .where('keluargaId', isEqualTo: keluargaId)
+            .where('periode', isEqualTo: periode)
             .get();
 
         if (existingTagihan.docs.isEmpty) {
-          // Create new tagihan
-          final tagihan = TagihanModel(
-            id: '',
-            iuranId: iuranId,
-            userId: userId,
-            keluargaId: keluargaId, // ⭐ Add keluargaId
-            userName: userName,
-            nominal: iuran.nominal,
-            status: 'belum_bayar',
-            isActive: true, // ⭐ Add isActive
-            jenisIuranName: iuran.judul, // ⭐ Add jenisIuranName
-            createdAt: DateTime.now(),
-          );
+          // Generate kode tagihan
+          final kodeTagihan = 'TGH-${now.year}${now.month.toString().padLeft(2, '0')}-${count.toString().padLeft(3, '0')}';
 
-          await _tagihanCollection.add(tagihan.toMap());
+          // Create new tagihan with complete structure
+          final tagihanData = {
+            'kodeTagihan': kodeTagihan,
+            'jenisIuranId': iuranId,
+            'jenisIuranName': iuran.judul,
+            'keluargaId': keluargaId,
+            'keluargaName': keluargaName,
+            'nominal': iuran.nominal,
+            'periode': periode,
+            'periodeTanggal': Timestamp.fromDate(iuran.tanggalJatuhTempo),
+            'status': 'Belum Dibayar', // ⭐ Kapitalisasi yang benar!
+            'isActive': true,
+            'createdBy': currentUser.uid,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          };
+
+          await _tagihanCollection.add(tagihanData);
           count++;
         }
       }
@@ -197,7 +235,8 @@ class IuranService {
   /// Get tagihan by iuran
   Stream<List<TagihanModel>> getTagihanByIuran(String iuranId) {
     return _tagihanCollection
-        .where('iuranId', isEqualTo: iuranId)
+        .where('jenisIuranId', isEqualTo: iuranId) // ⭐ FIXED: Use jenisIuranId
+        .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
@@ -281,7 +320,8 @@ class IuranService {
   Future<Map<String, dynamic>> getIuranStatistics(String iuranId) async {
     try {
       final tagihanSnapshot = await _tagihanCollection
-          .where('iuranId', isEqualTo: iuranId)
+          .where('jenisIuranId', isEqualTo: iuranId) // ⭐ FIXED: Use jenisIuranId
+          .where('isActive', isEqualTo: true)
           .get();
 
       int totalTagihan = tagihanSnapshot.docs.length;
@@ -295,12 +335,13 @@ class IuranService {
         final tagihan = TagihanModel.fromFirestore(doc);
         totalNominal += tagihan.nominal;
 
-        if (tagihan.status == 'sudah_bayar') {
+        // ⭐ FIXED: Match both old and new status values
+        if (tagihan.status == 'sudah_bayar' || tagihan.status == 'Lunas') {
           sudahBayar++;
           totalTerbayar += tagihan.nominal;
-        } else if (tagihan.status == 'belum_bayar') {
+        } else if (tagihan.status == 'belum_bayar' || tagihan.status == 'Belum Dibayar') {
           belumBayar++;
-        } else if (tagihan.status == 'terlambat') {
+        } else if (tagihan.status == 'terlambat' || tagihan.status == 'Terlambat') {
           terlambat++;
         }
       }

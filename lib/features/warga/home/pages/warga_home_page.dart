@@ -32,14 +32,6 @@ class WargaHomePage extends StatefulWidget {
 
 class _WargaHomePageState extends State<WargaHomePage> {
   final KYCService _kycService = KYCService();
-  int _refreshCounter = 0; // ⭐ Add refresh counter to force rebuild
-
-  // ⭐ Method to force refresh
-  void _forceRefresh() {
-    setState(() {
-      _refreshCounter++;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -168,10 +160,6 @@ class _WargaHomePageState extends State<WargaHomePage> {
                         onRefresh: () async {
                           // Refresh user data from Firestore
                           await authProvider.refreshUserData();
-                          // ⭐ Force rebuild to ensure fresh data
-                          _forceRefresh();
-                          // ⭐ Small delay to ensure stream updates
-                          await Future.delayed(const Duration(milliseconds: 500));
                         },
                         color: const Color(0xFF2F80ED),
                         child: SingleChildScrollView(
@@ -182,73 +170,12 @@ class _WargaHomePageState extends State<WargaHomePage> {
                             children: [
                               // KYC Alert - Sekarang di dalam scroll (ikut scroll)
                               if (!isKycComplete)
-                                Column(
-                                  children: [
-                                    HomeKycAlert(
-                                      isKycComplete: isKycComplete,
-                                      isKycPending: isKycPending,
-                                      onUploadTap: () {
-                                        context.push(AppRoutes.wargaKYC);
-                                      },
-                                    ),
-                                    // ⭐ DEBUG INFO (only in debug mode)
-                                    if (kDebugMode && isKycPending) ...[
-                                      const SizedBox(height: 8),
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.orange.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: Colors.orange.withValues(alpha: 0.3),
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              '🔍 DEBUG INFO (Dev Mode)',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.orange[800],
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              'KTP: ${hasKTPDocument ? "Ada ($ktpStatus)" : "Tidak ada"}\n'
-                                              'KK: ${hasKKDocument ? "Ada ($kkStatus)" : "Tidak ada"}\n'
-                                              'User Status: $userStatus\n'
-                                              'Refresh Counter: $_refreshCounter',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 10,
-                                                color: Colors.orange[700],
-                                                height: 1.4,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            ElevatedButton.icon(
-                                              onPressed: _forceRefresh,
-                                              icon: const Icon(Icons.refresh, size: 16),
-                                              label: Text(
-                                                'Force Refresh',
-                                                style: GoogleFonts.poppins(fontSize: 11),
-                                              ),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.orange,
-                                                foregroundColor: Colors.white,
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 12,
-                                                  vertical: 6,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ],
+                                HomeKycAlert(
+                                  isKycComplete: isKycComplete,
+                                  isKycPending: isKycPending,
+                                  onUploadTap: () {
+                                    context.push(AppRoutes.wargaKYC);
+                                  },
                                 ),
 
                               if (!isKycComplete) const SizedBox(height: 16),

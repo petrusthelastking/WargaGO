@@ -25,6 +25,7 @@ class IuranHeaderCard extends StatelessWidget {
       symbol: 'Rp. ',
       decimalDigits: 0,
     );
+    final dateFormat = DateFormat('dd MMM yyyy', 'id_ID');
 
     // Get first unpaid tagihan for detail navigation
     final firstUnpaid = provider.tagihanAktif.isNotEmpty 
@@ -37,33 +38,37 @@ class IuranHeaderCard extends StatelessWidget {
     final totalBelumDibayar = provider.totalBelumDibayar;
     final countTunggakan = provider.countTunggakan;
 
-    return InkWell(
+    return GestureDetector(
       onTap: firstUnpaid != null ? () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => IuranDetailPage(
-              tagihan: firstUnpaid,
+              tagihanId: firstUnpaid.id, // ⭐ ADDED: Pass tagihan ID
+              namaIuran: firstUnpaid.jenisIuranName,
+              jumlah: firstUnpaid.nominal.toInt(),
+              tanggal: dateFormat.format(firstUnpaid.periodeTanggal),
+              status: firstUnpaid.status,
+              keterangan: firstUnpaid.catatan,
             ),
           ),
         );
       } : null,
-      borderRadius: BorderRadius.circular(16),
       child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2F80ED),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2F80ED),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
         children: [
           Expanded(
             child: Column(

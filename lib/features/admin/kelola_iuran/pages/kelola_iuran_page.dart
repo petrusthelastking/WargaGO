@@ -100,6 +100,11 @@ class _KelolaIuranPageState extends State<KelolaIuranPage>
           _totalTerkumpul = terkumpulBulanIni;
           _loadingStats = false;
         });
+
+        debugPrint('📊 Stats Loaded:');
+        debugPrint('   Total: $total');
+        debugPrint('   Belum Bayar: $belumBayar');
+        debugPrint('   Lunas: $lunas');
       }
     } catch (e) {
       debugPrint('❌ Error loading tagihan stats: $e');
@@ -143,7 +148,7 @@ class _KelolaIuranPageState extends State<KelolaIuranPage>
               indicatorColor: Colors.white,
               indicatorWeight: 3,
               labelColor: Colors.white,
-              unselectedLabelColor: Colors.white.withOpacity(0.7),
+              unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
               labelStyle: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -241,7 +246,7 @@ class _KelolaIuranPageState extends State<KelolaIuranPage>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF10B981).withOpacity(0.3),
+            color: const Color(0xFF10B981).withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -252,7 +257,7 @@ class _KelolaIuranPageState extends State<KelolaIuranPage>
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -273,14 +278,14 @@ class _KelolaIuranPageState extends State<KelolaIuranPage>
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white.withOpacity(0.95),
+                        color: Colors.white.withValues(alpha: 0.95),
                       ),
                     ),
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
@@ -316,7 +321,7 @@ class _KelolaIuranPageState extends State<KelolaIuranPage>
                   '$_tagihanLunas lunas dari $_totalTagihan tagihan',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
               ],
@@ -330,19 +335,8 @@ class _KelolaIuranPageState extends State<KelolaIuranPage>
   Widget _buildQuickStatsGrid() {
     return Consumer<JenisIuranProvider>(
       builder: (context, jenisIuranProvider, _) {
-        final totalJenisIuran = jenisIuranProvider.jenisIuranList.length;
-
         return Row(
           children: [
-            Expanded(
-              child: _buildMiniStatCard(
-                'Jenis Iuran',
-                totalJenisIuran.toString(),
-                Icons.category_outlined,
-                const Color(0xFF2988EA),
-              ),
-            ),
-            const SizedBox(width: 10),
             Expanded(
               child: _buildMiniStatCard(
                 'Total Tagihan',
@@ -354,19 +348,19 @@ class _KelolaIuranPageState extends State<KelolaIuranPage>
             const SizedBox(width: 10),
             Expanded(
               child: _buildMiniStatCard(
-                'Belum Bayar',
-                _tagihanBelumBayar.toString(),
-                Icons.pending_actions_outlined,
-                const Color(0xFFF59E0B),
+                'Sudah Bayar',
+                _tagihanLunas.toString(),
+                Icons.check_circle_outline,
+                const Color(0xFF10B981),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: _buildMiniStatCard(
-                'Lunas',
-                _tagihanLunas.toString(),
-                Icons.check_circle_outline,
-                const Color(0xFF10B981),
+                'Belum Bayar',
+                _tagihanBelumBayar.toString(),
+                Icons.pending_actions_outlined,
+                const Color(0xFFF59E0B),
               ),
             ),
           ],
@@ -384,10 +378,10 @@ class _KelolaIuranPageState extends State<KelolaIuranPage>
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: color.withOpacity(0.2),
+          color: color.withValues(alpha: 0.2),
           width: 1,
         ),
       ),

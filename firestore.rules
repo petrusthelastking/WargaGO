@@ -150,7 +150,28 @@ service cloud.firestore {
     // ========================================================================
     match /keuangan/{transactionId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+
+      // Create: Admin bisa create apapun, Warga hanya bisa create pemasukan iuran mereka sendiri
+      allow create: if isAdmin() || (
+        isSignedIn() &&
+        // Validasi: Harus pemasukan dari iuran
+        request.resource.data.jenis == 'Pemasukan' &&
+        request.resource.data.kategori == 'Iuran Warga' &&
+        // Validasi: keluargaId harus sesuai dengan keluargaId user
+        request.resource.data.keluargaId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keluargaId &&
+        // Validasi: Harus ada tagihanId (reference)
+        'tagihanId' in request.resource.data &&
+        // Validasi: Harus ada buktiTransaksi
+        'buktiTransaksi' in request.resource.data &&
+        // Validasi: Harus ada required fields
+        'nominal' in request.resource.data &&
+        'tanggal' in request.resource.data &&
+        'jenisIuranId' in request.resource.data &&
+        'jenisIuranName' in request.resource.data &&
+        'periode' in request.resource.data
+      );
+
+      allow update, delete: if isAdmin();
     }
 
     match /pemasukan/{pemasukanId} {
@@ -169,8 +190,35 @@ service cloud.firestore {
     }
 
     match /tagihan/{tagihanId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+      // Read: Warga bisa baca tagihan keluarganya, admin bisa baca semua
+      allow read: if isSignedIn() && (
+        resource.data.keluargaId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keluargaId ||
+        isAdmin()
+      );
+
+      // Create: Hanya admin
+      allow create: if isAdmin();
+
+      // Update: Admin full access, warga bisa update untuk submit bukti pembayaran
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        // Warga hanya bisa update tagihan keluarganya sendiri
+        resource.data.keluargaId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keluargaId &&
+        // Hanya field berikut yang boleh diubah warga saat submit bukti:
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'buktiPembayaran',
+          'metodePembayaran',
+          'tanggalBayar',
+          'updatedAt',
+          'status'
+        ]) &&
+        // Status hanya boleh diubah ke "Lunas" (auto-paid) atau tetap sama
+        (request.resource.data.status == 'Lunas' ||
+         request.resource.data.status == resource.data.status)
+      );
+
+      // Delete: Hanya admin
+      allow delete: if isAdmin();
     }
 
     match /keluarga/{keluargaId} {
@@ -491,44 +539,8 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // ========================================================================
-    // TAGIHAN COLLECTION - Tagihan Iuran per Warga
-    // ========================================================================
-    match /tagihan/{tagihanId} {
-      // Read: User bisa read tagihan sendiri, admin bisa read semua
-      allow read: if isSignedIn() &&
-                     (request.auth.uid == resource.data.userId || isAdmin());
+    // NOTE: tagihan collection rules already defined above (around line 171)
+    // Removed duplicate definition to fix compilation error
 
-      // Create: Hanya admin yang bisa create tagihan (auto-generated dari iuran)
-      allow create: if isAdmin() &&
-                       hasValidData() &&
-                       'iuranId' in request.resource.data &&
-                       'userId' in request.resource.data &&
-                       'userName' in request.resource.data &&
-                       'nominal' in request.resource.data &&
-                       'status' in request.resource.data &&
-                       'isActive' in request.resource.data &&
-                       request.resource.data.nominal is number &&
-                       request.resource.data.nominal > 0;
-
-      // List/Query: User bisa query own tagihan by keluargaId, admin bisa query semua
-      allow list: if isSignedIn();
-
-      // Update:
-      // - User bisa update tagihan sendiri (upload bukti pembayaran)
-      // - Admin bisa update semua tagihan (verifikasi pembayaran)
-      allow update: if isSignedIn() && (
-                       // User update tagihan sendiri (upload bukti)
-                       (request.auth.uid == resource.data.userId &&
-                        request.resource.data.userId == resource.data.userId &&
-                        request.resource.data.iuranId == resource.data.iuranId) ||
-                       // Admin update semua (verifikasi)
-                       isAdmin()
-                     );
-
-      // Delete: Hanya admin yang bisa delete tagihan
-      allow delete: if isAdmin();
-    }
   }
 }
-

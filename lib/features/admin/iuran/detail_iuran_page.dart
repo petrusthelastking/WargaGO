@@ -447,11 +447,11 @@ class _DetailIuranPageState extends State<DetailIuranPage> {
         if (_selectedFilter != 'Semua') {
           tagihanList = tagihanList.where((tagihan) {
             if (_selectedFilter == 'Belum Bayar') {
-              return tagihan.status == 'belum_bayar';
+              return tagihan.status == 'belum_bayar' || tagihan.status == 'Belum Dibayar';
             } else if (_selectedFilter == 'Sudah Bayar') {
-              return tagihan.status == 'sudah_bayar';
+              return tagihan.status == 'sudah_bayar' || tagihan.status == 'Lunas';
             } else if (_selectedFilter == 'Terlambat') {
-              return tagihan.status == 'terlambat';
+              return tagihan.status == 'terlambat' || tagihan.status == 'Terlambat';
             }
             return true;
           }).toList();
@@ -485,11 +485,13 @@ class _DetailIuranPageState extends State<DetailIuranPage> {
 
     switch (tagihan.status) {
       case 'sudah_bayar':
+      case 'Lunas':
         statusColor = const Color(0xFF10B981);
         statusIcon = Icons.check_circle_rounded;
         statusText = 'Lunas';
         break;
       case 'terlambat':
+      case 'Terlambat':
         statusColor = const Color(0xFFEF4444);
         statusIcon = Icons.error_rounded;
         statusText = 'Terlambat';
@@ -576,14 +578,14 @@ class _DetailIuranPageState extends State<DetailIuranPage> {
                     ),
                   ),
                 ),
-                // ⭐ NEW: Show verification button if there's payment proof
-                if (tagihan.buktiPembayaran != null &&
-                    tagihan.buktiPembayaran!.isNotEmpty &&
-                    tagihan.status == 'belum_bayar') ...[
+                // ⭐ UPDATED: Show "Lihat Bukti" button for Lunas status (monitoring only)
+                if (tagihan.status == 'Lunas' &&
+                    tagihan.buktiPembayaran != null &&
+                    tagihan.buktiPembayaran!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   ElevatedButton.icon(
                     onPressed: () {
-                      _verifyPayment(tagihan);
+                      _showBuktiPembayaran(tagihan.buktiPembayaran!);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF10B981),
@@ -592,9 +594,9 @@ class _DetailIuranPageState extends State<DetailIuranPage> {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    icon: const Icon(Icons.check_circle_outline, size: 14),
+                    icon: const Icon(Icons.visibility_outlined, size: 14),
                     label: Text(
-                      'Verifikasi',
+                      'Lihat Bukti',
                       style: GoogleFonts.poppins(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -602,8 +604,8 @@ class _DetailIuranPageState extends State<DetailIuranPage> {
                     ),
                   ),
                 ],
-                // Show "Menunggu Pembayaran" if no proof yet
-                if (tagihan.status == 'belum_bayar' &&
+                // Show "Menunggu Pembayaran" if no payment yet
+                if ((tagihan.status == 'belum_bayar' || tagihan.status == 'Belum Dibayar') &&
                     (tagihan.buktiPembayaran == null ||
                      tagihan.buktiPembayaran!.isEmpty)) ...[
                   const SizedBox(height: 8),
@@ -684,6 +686,58 @@ class _DetailIuranPageState extends State<DetailIuranPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ⭐ NEW: Show payment proof dialog (monitoring only)
+  void _showBuktiPembayaran(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Close button
+            Align(
+              alignment: Alignment.topRight,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 400,
+                    color: Colors.grey[200],
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Gagal memuat gambar',
+                          style: GoogleFonts.poppins(),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
