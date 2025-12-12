@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wargago/features/sekertaris/agenda/widgets/agenda_card.dart';
 import 'package:wargago/features/sekertaris/agenda/pages/tambah_agenda_page.dart';
+import 'package:wargago/features/sekertaris/agenda/pages/detail_agenda_page.dart';
 
 /// Halaman Agenda untuk Sekretaris
 /// Menampilkan semua agenda/kegiatan dengan filter dan pencarian
@@ -288,8 +289,25 @@ class _SekretarisAgendaPageState extends State<SekretarisAgendaPage>
           description: agenda['description'],
           status: agenda['status'],
           attendees: agenda['attendees'],
-          onTap: () {
-            // TODO: Detail agenda
+          onTap: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DetailAgendaPage(
+                  date: agenda['date'],
+                  time: agenda['time'],
+                  title: agenda['title'],
+                  location: agenda['location'],
+                  description: agenda['description'],
+                  status: agenda['status'],
+                  attendees: agenda['attendees'],
+                ),
+              ),
+            );
+            if (result == true) {
+              // Refresh data jika ada perubahan
+              setState(() {});
+            }
           },
           onMenuTap: () {
             _showActionMenu(context, agenda['status']);
