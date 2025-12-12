@@ -17,22 +17,23 @@ class SekretarisMainPage extends StatefulWidget {
 class _SekretarisMainPageState extends State<SekretarisMainPage> {
   int _currentIndex = 0;
 
-  // Daftar halaman yang akan ditampilkan
-  late final List<Widget> _pages;
-
-  @override
-  void initState() {
-    super.initState();
-    _pages = [
-      const SekretarisDashboardPage(), // Index 0: Dashboard
-      const SekretarisAgendaPage(), // Index 1: Agenda
-      const SekretarisNotulenPage(), // Index 2: Notulen
-      const SekretarisProfilePage(), // Index 3: Profil
-    ];
+  // Fungsi untuk berpindah tab
+  void _changeTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Daftar halaman yang akan ditampilkan
+    final List<Widget> _pages = [
+      SekretarisDashboardPage(onNavigateToTab: _changeTab), // Index 0: Dashboard
+      const SekretarisAgendaPage(), // Index 1: Agenda
+      const SekretarisNotulenPage(), // Index 2: Notulen
+      const SekretarisProfilePage(), // Index 3: Profil
+    ];
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -49,3 +50,5 @@ class _SekretarisMainPageState extends State<SekretarisMainPage> {
     );
   }
 }
+
+

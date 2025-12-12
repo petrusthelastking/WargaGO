@@ -6,7 +6,9 @@ import 'package:wargago/core/providers/auth_provider.dart';
 /// Dashboard Page untuk Sekretaris
 /// Halaman utama untuk sekretaris setelah login
 class SekretarisDashboardPage extends StatelessWidget {
-  const SekretarisDashboardPage({super.key});
+  final Function(int)? onNavigateToTab;
+  
+  const SekretarisDashboardPage({super.key, this.onNavigateToTab});
 
   @override
   Widget build(BuildContext context) {
@@ -200,7 +202,10 @@ class SekretarisDashboardPage extends StatelessWidget {
                           width: double.infinity,
                           child: OutlinedButton(
                             onPressed: () {
-                              // TODO: Navigate to full agenda page
+                              // Pindah ke tab agenda (index 1)
+                              if (onNavigateToTab != null) {
+                                onNavigateToTab!(1);
+                              }
                             },
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
