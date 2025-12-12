@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wargago/features/sekertaris/agenda/pages/edit_agenda_page.dart';
 import 'package:wargago/features/sekertaris/agenda/widgets/detail_info_card.dart';
 import 'package:wargago/features/sekertaris/agenda/widgets/detail_item.dart';
 
@@ -67,8 +68,35 @@ class DetailAgendaPage extends StatelessWidget {
           if (status != 'completed')
             IconButton(
               icon: const Icon(Icons.edit, color: Colors.white),
-              onPressed: () {
-                // TODO: Edit agenda
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditAgendaPage(
+                      date: date,
+                      time: time,
+                      title: title,
+                      location: location,
+                      description: description,
+                      attendees: attendees,
+                    ),
+                  ),
+                );
+                
+                // Refresh halaman jika ada perubahan
+                if (result == true && context.mounted) {
+                  // TODO: Refresh data dari database
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Agenda berhasil diperbarui',
+                        style: GoogleFonts.poppins(),
+                      ),
+                      backgroundColor: const Color(0xFF27AE60),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
               },
             ),
           IconButton(

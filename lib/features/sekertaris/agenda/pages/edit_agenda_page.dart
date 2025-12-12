@@ -1,29 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:wargago/features/sekertaris/agenda/widgets/agenda_form_field.dart';
 import 'package:wargago/features/sekertaris/agenda/widgets/date_picker_field.dart';
 import 'package:wargago/features/sekertaris/agenda/widgets/time_picker_field.dart';
-import 'package:wargago/features/sekertaris/agenda/widgets/add_info_card.dart';
+import 'package:wargago/features/sekertaris/agenda/widgets/edit_info_card.dart';
 import 'package:wargago/features/sekertaris/agenda/widgets/save_button.dart';
 import 'package:wargago/features/sekertaris/agenda/widgets/cancel_button.dart';
 
-/// Halaman untuk menambahkan agenda kegiatan baru
-class TambahAgendaPage extends StatefulWidget {
-  const TambahAgendaPage({super.key});
+/// Halaman untuk mengedit agenda kegiatan
+class EditAgendaPage extends StatefulWidget {
+  final String date;
+  final String time;
+  final String title;
+  final String location;
+  final String description;
+  final int attendees;
+
+  const EditAgendaPage({
+    super.key,
+    required this.date,
+    required this.time,
+    required this.title,
+    required this.location,
+    required this.description,
+    required this.attendees,
+  });
 
   @override
-  State<TambahAgendaPage> createState() => _TambahAgendaPageState();
+  State<EditAgendaPage> createState() => _EditAgendaPageState();
 }
 
-class _TambahAgendaPageState extends State<TambahAgendaPage> {
+class _EditAgendaPageState extends State<EditAgendaPage> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _locationController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _attendeesController = TextEditingController();
+  late TextEditingController _titleController;
+  late TextEditingController _locationController;
+  late TextEditingController _descriptionController;
+  late TextEditingController _attendeesController;
 
-  DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = TimeOfDay.now();
+  late DateTime _selectedDate;
+  late TimeOfDay _selectedTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.title);
+    _locationController = TextEditingController(text: widget.location);
+    _descriptionController = TextEditingController(text: widget.description);
+    _attendeesController = TextEditingController(text: widget.attendees.toString());
+
+    // Parse existing date and time
+    try {
+      _selectedDate = DateFormat('dd MMM yyyy', 'id_ID').parse(widget.date);
+    } catch (e) {
+      _selectedDate = DateTime.now();
+    }
+
+    try {
+      final timeParts = widget.time.split(':');
+      _selectedTime = TimeOfDay(
+        hour: int.parse(timeParts[0]),
+        minute: int.parse(timeParts[1]),
+      );
+    } catch (e) {
+      _selectedTime = TimeOfDay.now();
+    }
+  }
 
   @override
   void dispose() {
@@ -84,9 +126,9 @@ class _TambahAgendaPageState extends State<TambahAgendaPage> {
     }
   }
 
-  void _saveAgenda() {
+  void _saveChanges() {
     if (_formKey.currentState!.validate()) {
-      // TODO: Simpan ke database
+      // TODO: Update agenda di database
       
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
@@ -96,7 +138,7 @@ class _TambahAgendaPageState extends State<TambahAgendaPage> {
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 12),
               Text(
-                'Agenda berhasil ditambahkan',
+                'Agenda berhasil diperbarui',
                 style: GoogleFonts.poppins(),
               ),
             ],
@@ -120,7 +162,7 @@ class _TambahAgendaPageState extends State<TambahAgendaPage> {
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         title: Text(
-          'Tambah Agenda',
+          'Edit Agenda',
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -141,7 +183,7 @@ class _TambahAgendaPageState extends State<TambahAgendaPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Info Card
-              const AddInfoCard(),
+              const EditInfoCard(),
 
               const SizedBox(height: 24),
 
@@ -239,9 +281,8 @@ class _TambahAgendaPageState extends State<TambahAgendaPage> {
 
               // Tombol Simpan
               SaveButton(
-                onPressed: _saveAgenda,
-                label: 'Simpan Agenda',
-                icon: Icons.save,
+                onPressed: _saveChanges,
+                label: 'Simpan Perubahan',
               ),
 
               const SizedBox(height: 16),
