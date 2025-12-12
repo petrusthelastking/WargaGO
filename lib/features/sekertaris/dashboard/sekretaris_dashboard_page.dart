@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:wargago/core/constants/app_routes.dart';
 import 'package:wargago/core/providers/auth_provider.dart';
 
 /// Dashboard Page untuk Sekretaris
@@ -16,65 +14,6 @@ class SekretarisDashboardPage extends StatelessWidget {
     final user = authProvider.userModel;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Dashboard Sekretaris',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: const Color(0xFF2F80ED),
-        elevation: 0,
-        actions: [
-          // Logout button
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () async {
-              // Show confirmation dialog
-              final shouldLogout = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text(
-                    'Logout',
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                  ),
-                  content: Text(
-                    'Apakah Anda yakin ingin logout?',
-                    style: GoogleFonts.poppins(),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: Text(
-                        'Batal',
-                        style: GoogleFonts.poppins(),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: Text(
-                        'Logout',
-                        style: GoogleFonts.poppins(
-                          color: Colors.red,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-
-              if (shouldLogout == true) {
-                await authProvider.signOut();
-                if (context.mounted) {
-                  context.go(AppRoutes.login);
-                }
-              }
-            },
-          ),
-        ],
-      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -89,59 +28,68 @@ class SekretarisDashboardPage extends StatelessWidget {
           ),
         ),
         child: SafeArea(
+          left: false,
           child: Column(
             children: [
               // Header Section
-              Container(
-                padding: const EdgeInsets.all(24),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 32, 16, 16),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Welcome Text
-                    Text(
-                      'Selamat Datang',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: Colors.white.withValues(alpha: 0.9),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Selamat Datang',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      user?.nama ?? 'Sekretaris',
-                      style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        user?.nama ?? 'Sekretaris',
+                        style: GoogleFonts.poppins(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.description,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Sekretaris',
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.description,
                               color: Colors.white,
-                              fontWeight: FontWeight.w500,
+                              size: 16,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Text(
+                              'Sekretaris',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -164,68 +112,9 @@ class SekretarisDashboardPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Info Card
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFF2F80ED).withValues(alpha: 0.1),
-                                const Color(0xFF5B8DEF).withValues(alpha: 0.05),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0xFF2F80ED).withValues(alpha: 0.2),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF2F80ED).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.info_outline,
-                                  color: Color(0xFF2F80ED),
-                                  size: 28,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Dashboard Sekretaris',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Halaman ini sedang dalam tahap pengembangan',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // User Info Section
+                        // Statistics Section
                         Text(
-                          'Informasi Akun',
+                          'Ringkasan Statistik',
                           style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -233,25 +122,30 @@ class SekretarisDashboardPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _buildInfoTile(
-                          icon: Icons.person,
-                          title: 'Nama',
-                          value: user?.nama ?? '-',
+
+                        // Statistics Cards in Grid
+                        _buildStatisticCard(
+                          icon: Icons.event_note,
+                          title: 'Agenda',
+                          count: '12',
+                          subtitle: 'Kegiatan bulan ini',
+                          color: const Color(0xFF2F80ED),
                         ),
-                        _buildInfoTile(
-                          icon: Icons.email,
-                          title: 'Email',
-                          value: user?.email ?? '-',
+                        const SizedBox(height: 12),
+                        _buildStatisticCard(
+                          icon: Icons.description,
+                          title: 'Notulen',
+                          count: '8',
+                          subtitle: 'Rapat terdokumentasi',
+                          color: const Color(0xFF27AE60),
                         ),
-                        _buildInfoTile(
-                          icon: Icons.badge,
-                          title: 'Role',
-                          value: user?.role ?? '-',
-                        ),
-                        _buildInfoTile(
-                          icon: Icons.fingerprint,
-                          title: 'User ID',
-                          value: user?.id ?? '-',
+                        const SizedBox(height: 12),
+                        _buildStatisticCard(
+                          icon: Icons.folder_open,
+                          title: 'Arsip Surat',
+                          count: '45',
+                          subtitle: 'Dokumen tersimpan',
+                          color: const Color(0xFFF39C12),
                         ),
                       ],
                     ),
@@ -265,31 +159,49 @@ class SekretarisDashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoTile({
+  Widget _buildStatisticCard({
     required IconData icon,
     required String title,
-    required String value,
+    required String count,
+    required String subtitle,
+    required Color color,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withValues(alpha: 0.1),
+            color.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF2F80ED).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
-              color: const Color(0xFF2F80ED),
-              size: 20,
+              color: color,
+              size: 32,
             ),
           ),
           const SizedBox(width: 16),
@@ -300,17 +212,26 @@ class SekretarisDashboardPage extends StatelessWidget {
                 Text(
                   title,
                   style: GoogleFonts.poppins(
-                    fontSize: 12,
+                    fontSize: 14,
                     color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  count,
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: color,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  value,
+                  subtitle,
                   style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
                   ),
                 ),
               ],
