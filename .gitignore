@@ -64,5 +64,13 @@ google-services.json
 GoogleService-Info.plist
 firebase_options.dart
 
+# Keystore files (DO NOT COMMIT - SECURITY!)
+*.jks
+*.keystore
+**/key.properties
+android/key.properties
+android/app/upload-keystore.jks
+keystore_base64.txt
+
 *.mocks.dart
 *.env
