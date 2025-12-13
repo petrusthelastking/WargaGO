@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "693556950050-et6t3t6e9tdrpq908lddurs5n3kcla7g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.jawara",
+            "certificate_hash": "6d9a2e2397e52ebfb5b0f98ac08a95130dbb2bbb"
+          }
+        },
+        {
           "client_id": "693556950050-nggmgi9gksor75efoi9obcqi79neckjh.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
